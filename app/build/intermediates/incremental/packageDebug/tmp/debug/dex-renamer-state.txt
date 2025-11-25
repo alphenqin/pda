@@ -1,0 +1,4 @@
+#Mon Jul 06 16:54:02 CST 2020
+base.0=D\:\\Android studio code\\PrinterTools_58D1_studio\\QS5502DEMO\\app\\build\\intermediates\\dex\\debug\\mergeDexDebug\\out\\classes.dex
+path.0=classes.dex
+renamed.0=classes.dex
