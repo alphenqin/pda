@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <!-- 顶部标题栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="#2196F3"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="选阀门"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- 查询条件区域 -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="300dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="#FFFFFF">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="查询条件"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:paddingBottom="8dp" />
+
+            <!-- 厂家名称 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:text="厂家名称："
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/etVendorName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="请输入厂家名称"
+                    android:textSize="16sp"
+                    android:padding="8dp"
+                    android:background="#F0F0F0" />
+            </LinearLayout>
+
+            <!-- 阀门编号 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:text="阀门编号："
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/etValveNo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="请输入阀门编号"
+                    android:textSize="16sp"
+                    android:padding="8dp"
+                    android:background="#F0F0F0" />
+            </LinearLayout>
+
+            <!-- 阀门型号 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:text="阀门型号："
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/etValveModel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="请输入阀门型号"
+                    android:textSize="16sp"
+                    android:padding="8dp"
+                    android:background="#F0F0F0" />
+            </LinearLayout>
+
+            <!-- 入库日期 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:text="入库日期："
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/etInboundDate"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="yyyy-MM-dd"
+                    android:textSize="16sp"
+                    android:padding="8dp"
+                    android:background="#F0F0F0" />
+            </LinearLayout>
+
+            <!-- 查询按钮 -->
+            <Button
+                android:id="@+id/btnSearch"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="8dp"
+                android:text="查询"
+                android:textSize="18sp"
+                android:background="#2196F3"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- 结果列表 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="查询结果"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:padding="12dp"
+        android:background="#E0E0E0" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/rvValveList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#FFFFFF" />
+
+    <!-- 底部按钮 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="#FFFFFF">
+
+        <Button
+            android:id="@+id/btnBack"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="返回"
+            android:textSize="20sp"
+            android:background="#CCCCCC"
+            android:textColor="#333333" />
+
+        <Button
+            android:id="@+id/btnConfirm"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="确认"
+            android:textSize="20sp"
+            android:background="#4CAF50"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+</LinearLayout>
+

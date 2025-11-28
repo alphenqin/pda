@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <CheckBox
+            android:id="@+id/cbSelected"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="false"
+            android:focusable="false" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/tvTaskNo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="任务编号：R20250715145830999"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333333" />
+
+            <TextView
+                android:id="@+id/tvTaskType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="任务类型：入库"
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:id="@+id/tvTaskStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="状态：待执行"
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:id="@+id/tvTaskTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="创建时间：2025-01-15 14:58:30"
+                android:textSize="14sp"
+                android:textColor="#999999"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:id="@+id/tvTaskInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="托盘：11-01  库位：2-01"
+                android:textSize="14sp"
+                android:textColor="#999999"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E0E0E0"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>
+

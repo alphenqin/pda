@@ -10,41 +10,116 @@
 9        android:targetSdkVersion="23" />
 9-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml
 10
-11    <application
-11-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:6:5-24:19
-12        android:allowBackup="true"
-12-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:7:9-35
-13        android:debuggable="true"
-14        android:icon="@drawable/ic_launcher"
-14-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:8:9-45
-15        android:label="@string/app_name"
-15-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:9:9-41
-16        android:testOnly="true"
-17        android:theme="@style/AppTheme" >
-17-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:10:9-40
-18        <activity
-18-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:12:15-23:20
-19            android:name="com.qs.qs5502demo.MainActivity"
-19-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:15:13-58
-20            android:label="@string/app_name"
-20-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:17:13-45
-21            android:launchMode="singleTask"
-21-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:13:13-44
-22            android:screenOrientation="portrait"
-22-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:14:13-49
-23            android:windowSoftInputMode="stateAlwaysHidden" >
-23-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:16:13-60
-24            <intent-filter>
-24-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:18:13-22:29
-25                <action android:name="android.intent.action.MAIN" />
-25-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:19:17-69
-25-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:19:25-66
-26
-27                <category android:name="android.intent.category.LAUNCHER" />
-27-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:21:17-77
-27-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:21:27-74
-28            </intent-filter>
-29        </activity>
-30    </application>
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:6:5-67
+11-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:6:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:7:5-79
+12-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:7:22-76
+13
+14    <application
+14-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:9:5-67:19
+15        android:allowBackup="true"
+15-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:10:9-35
+16        android:debuggable="true"
+17        android:icon="@drawable/ic_launcher"
+17-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:11:9-45
+18        android:label="@string/app_name"
+18-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:12:9-41
+19        android:testOnly="true"
+20        android:theme="@style/AppTheme" >
+20-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:13:9-40
+21
+22        <!-- 主界面 -->
+23        <activity
+23-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:16:9-26:20
+24            android:name="com.qs.qs5502demo.MainActivity"
+24-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:19:13-58
+25            android:label="@string/app_name"
+25-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:21:13-45
+26            android:launchMode="singleTask"
+26-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:17:13-44
+27            android:screenOrientation="portrait"
+27-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:18:13-49
+28            android:windowSoftInputMode="stateAlwaysHidden" >
+28-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:20:13-60
+29            <intent-filter>
+29-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:22:13-25:29
+30                <action android:name="android.intent.action.MAIN" />
+30-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:23:17-69
+30-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:23:25-66
 31
-32</manifest>
+32                <category android:name="android.intent.category.LAUNCHER" />
+32-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:24:17-77
+32-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:24:27-74
+33            </intent-filter>
+34        </activity>
+35
+36        <!-- 入库模块 -->
+37        <activity
+37-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:29:9-32:63
+38            android:name="com.qs.qs5502demo.inbound.InboundActivity"
+38-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:30:13-69
+39            android:screenOrientation="portrait"
+39-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:31:13-49
+40            android:windowSoftInputMode="stateAlwaysHidden" />
+40-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:32:13-60
+41        <activity
+41-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:34:9-37:63
+42            android:name="com.qs.qs5502demo.inbound.BindValveActivity"
+42-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:35:13-71
+43            android:screenOrientation="portrait"
+43-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:36:13-49
+44            android:windowSoftInputMode="stateAlwaysHidden" />
+44-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:37:13-60
+45
+46        <!-- 送检模块 -->
+47        <activity
+47-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:40:9-43:63
+48            android:name="com.qs.qs5502demo.send.SendInspectionActivity"
+48-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:41:13-73
+49            android:screenOrientation="portrait"
+49-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:42:13-49
+50            android:windowSoftInputMode="stateAlwaysHidden" />
+50-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:43:13-60
+51        <activity
+51-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:45:9-48:63
+52            android:name="com.qs.qs5502demo.send.SelectValveActivity"
+52-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:46:13-70
+53            android:screenOrientation="portrait"
+53-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:47:13-49
+54            android:windowSoftInputMode="stateAlwaysHidden" />
+54-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:48:13-60
+55
+56        <!-- 回库模块 -->
+57        <activity
+57-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:51:9-54:63
+58            android:name="com.qs.qs5502demo.returnwarehouse.ReturnWarehouseActivity"
+58-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:52:13-85
+59            android:screenOrientation="portrait"
+59-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:53:13-49
+60            android:windowSoftInputMode="stateAlwaysHidden" />
+60-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:54:13-60
+61
+62        <!-- 出库模块 -->
+63        <activity
+63-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:57:9-60:63
+64            android:name="com.qs.qs5502demo.outbound.OutboundActivity"
+64-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:58:13-71
+65            android:screenOrientation="portrait"
+65-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:59:13-49
+66            android:windowSoftInputMode="stateAlwaysHidden" />
+66-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:60:13-60
+67
+68        <!-- 任务管理模块 -->
+69        <activity
+69-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:63:9-66:63
+70            android:name="com.qs.qs5502demo.task.TaskManageActivity"
+70-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:64:13-69
+71            android:screenOrientation="portrait"
+71-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:65:13-49
+72            android:windowSoftInputMode="stateAlwaysHidden" />
+72-->D:\360 project\QS5502DEMO\app\src\main\AndroidManifest.xml:66:13-60
+73    </application>
+74
+75</manifest>

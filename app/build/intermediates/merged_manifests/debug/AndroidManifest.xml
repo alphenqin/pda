@@ -8,6 +8,9 @@
         android:minSdkVersion="8"
         android:targetSdkVersion="23" />
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:allowBackup="true"
         android:debuggable="true"
@@ -15,6 +18,8 @@
         android:label="@string/app_name"
         android:testOnly="true"
         android:theme="@style/AppTheme" >
+
+        <!-- 主界面 -->
         <activity
             android:name="com.qs.qs5502demo.MainActivity"
             android:label="@string/app_name"
@@ -27,6 +32,44 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 入库模块 -->
+        <activity
+            android:name="com.qs.qs5502demo.inbound.InboundActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+        <activity
+            android:name="com.qs.qs5502demo.inbound.BindValveActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+
+        <!-- 送检模块 -->
+        <activity
+            android:name="com.qs.qs5502demo.send.SendInspectionActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+        <activity
+            android:name="com.qs.qs5502demo.send.SelectValveActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+
+        <!-- 回库模块 -->
+        <activity
+            android:name="com.qs.qs5502demo.returnwarehouse.ReturnWarehouseActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+
+        <!-- 出库模块 -->
+        <activity
+            android:name="com.qs.qs5502demo.outbound.OutboundActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+
+        <!-- 任务管理模块 -->
+        <activity
+            android:name="com.qs.qs5502demo.task.TaskManageActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden" />
     </application>
 
 </manifest>

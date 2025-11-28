@@ -1,69 +1,98 @@
 package com.qs.qs5502demo;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
-import android.text.Selection;
-import android.text.Spannable;
+import android.os.Handler;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.EditText;
+import android.widget.TextView;
 
 import com.qs.pda5502demo.R;
+import com.qs.qs5502demo.inbound.InboundActivity;
+import com.qs.qs5502demo.outbound.OutboundActivity;
+import com.qs.qs5502demo.returnwarehouse.ReturnWarehouseActivity;
+import com.qs.qs5502demo.send.SendInspectionActivity;
+import com.qs.qs5502demo.task.TaskManageActivity;
+import com.qs.qs5502demo.util.DateUtil;
 
-public class MainActivity extends Activity{
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+public class MainActivity extends Activity {
 	
-	private ScanBroadcastReceiver scanBroadcastReceiver;
-	
-	private EditText edText;
-	
+	private TextView tvDateTime;
+	private TextView tvUserInfo;
+	private Handler handler;
+	private Runnable updateTimeRunnable;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.main_layout);
+		setContentView(R.layout.activity_main);
 		
-		edText=(EditText) findViewById(R.id.edText);
+		tvDateTime = (TextView) findViewById(R.id.tvDateTime);
+		tvUserInfo = (TextView) findViewById(R.id.tvUserInfo);
 		
-		findViewById(R.id.scanBtn).setOnClickListener(new OnClickListener() {
+		// 初始化按钮点击事件
+		findViewById(R.id.btnInbound).setOnClickListener(new OnClickListener() {
 			@Override
-			public void onClick(View arg0) {
-				// TODO Auto-generated method stub
-				//模拟触发扫描按键，发出广播，开始扫描
-				Intent intentBroadcast = new Intent();
-				intentBroadcast.setAction("hbyapi.intent.key_scan_down");
-				sendBroadcast(intentBroadcast);
-				
+			public void onClick(View v) {
+				startActivity(new Intent(MainActivity.this, InboundActivity.class));
 			}
 		});
 		
-		scanBroadcastReceiver = new ScanBroadcastReceiver();
-		IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction("com.qs.scancode");
-		this.registerReceiver(scanBroadcastReceiver, intentFilter);
+		findViewById(R.id.btnSendInspection).setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				startActivity(new Intent(MainActivity.this, SendInspectionActivity.class));
+			}
+		});
 		
+		findViewById(R.id.btnReturn).setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				startActivity(new Intent(MainActivity.this, ReturnWarehouseActivity.class));
+			}
+		});
+		
+		findViewById(R.id.btnOutbound).setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				startActivity(new Intent(MainActivity.this, OutboundActivity.class));
+			}
+		});
+		
+		findViewById(R.id.btnTaskManage).setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				startActivity(new Intent(MainActivity.this, TaskManageActivity.class));
+			}
+		});
+		
+		// 启动时间更新
+		handler = new Handler();
+		updateTimeRunnable = new Runnable() {
+			@Override
+			public void run() {
+				updateDateTime();
+				handler.postDelayed(this, 1000);
+			}
+		};
+		handler.post(updateTimeRunnable);
 	}
 	
-	class ScanBroadcastReceiver extends BroadcastReceiver {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			// TODO Auto-generated method stub
-		// 获取扫描数据
-		String text1 = intent.getExtras().getString("data");
-		// 把扫描信息set到编辑框
-		edText.setText(text1);
-		}
+	private void updateDateTime() {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+		tvDateTime.setText(sdf.format(new Date()));
 	}
 	
 	@Override
 	protected void onDestroy() {
-		// TODO Auto-generated method stub
-		//退出时候注销广播接收器
-		unregisterReceiver(scanBroadcastReceiver);
+		if (handler != null && updateTimeRunnable != null) {
+			handler.removeCallbacks(updateTimeRunnable);
+		}
 		super.onDestroy();
 	}
-
 }

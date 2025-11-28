@@ -8,15 +8,55 @@
         "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\drawable-xhdpi\\ic_launcher.png"
     },
     {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_item_valve.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\item_valve.xml"
+    },
+    {
         "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\drawable-mdpi_ic_launcher.png.flat",
         "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\drawable-mdpi\\ic_launcher.png"
+    },
+    {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_activity_main.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\activity_main.xml"
     },
     {
         "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\drawable-xxhdpi_ic_launcher.png.flat",
         "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\drawable-xxhdpi\\ic_launcher.png"
     },
     {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_activity_select_valve.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\activity_select_valve.xml"
+    },
+    {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_activity_inbound.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\activity_inbound.xml"
+    },
+    {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_item_task.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\item_task.xml"
+    },
+    {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_activity_return.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\activity_return.xml"
+    },
+    {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_activity_outbound.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\activity_outbound.xml"
+    },
+    {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_activity_send_inspection.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\activity_send_inspection.xml"
+    },
+    {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_activity_bind_valve.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\activity_bind_valve.xml"
+    },
+    {
         "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_main_layout.xml.flat",
         "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\main_layout.xml"
+    },
+    {
+        "merged": "D:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\res\\merged\\debug\\layout_activity_task_manage.xml.flat",
+        "source": "D:\\360 project\\QS5502DEMO\\app\\src\\main\\res\\layout\\activity_task_manage.xml"
     }
 ]
