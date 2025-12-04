@@ -98,4 +98,3 @@ public class HttpUtil {
         return gson.fromJson(json, type);
     }
 }
-
