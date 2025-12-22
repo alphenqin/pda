@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -15,16 +14,23 @@ import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.AgvApiService;
 import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.model.AgvResponse;
+import com.qs.qs5502demo.model.AvailableBin;
 import com.qs.qs5502demo.model.Pallet;
 import com.qs.qs5502demo.util.DateUtil;
+import com.qs.qs5502demo.util.PreferenceUtil;
 import com.qs.qs5502demo.util.ScanHelper;
 
 public class InboundActivity extends Activity {
-    
+
+    private static final String DEFAULT_SWAP_STATION = "WAREHOUSE_SWAP_1";
+
     private TextView tvPalletNo;
     private TextView tvLocationCode;
     private View viewStatus;
+    private View layoutScanPallet;
+    private View layoutManualBin;
     private Button btnScanPallet;
+    private Button btnPickBin;
     private Button btnBindValve;
     private Button btnCallInbound;
     private Button btnBack;
@@ -39,6 +45,7 @@ public class InboundActivity extends Activity {
     private String palletType;
     private String matCode;  // 阀门物料编码
     private boolean isValveBound = false;  // 阀门是否已绑定
+    private boolean isPalletScanEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,11 +65,17 @@ public class InboundActivity extends Activity {
         tvPalletNo = (TextView) findViewById(R.id.tvPalletNo);
         tvLocationCode = (TextView) findViewById(R.id.tvLocationCode);
         viewStatus = findViewById(R.id.viewStatus);
+        layoutScanPallet = findViewById(R.id.layoutScanPallet);
+        layoutManualBin = findViewById(R.id.layoutManualBin);
         btnScanPallet = (Button) findViewById(R.id.btnScanPallet);
+        btnPickBin = (Button) findViewById(R.id.btnPickBin);
         btnBindValve = (Button) findViewById(R.id.btnBindValve);
         btnCallInbound = (Button) findViewById(R.id.btnCallInbound);
         btnBack = (Button) findViewById(R.id.btnBack);
         
+        isPalletScanEnabled = PreferenceUtil.getWmsPalletScanEnabled(this);
+        togglePalletEntryMode(isPalletScanEnabled);
+
         // 初始状态
         updateStatus(false);
     }
@@ -81,12 +94,20 @@ public class InboundActivity extends Activity {
                 scanPallet();
             }
         });
+
+        btnPickBin.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                fetchAvailableBin();
+            }
+        });
         
         btnBindValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (palletNo == null || palletNo.isEmpty()) {
-                    Toast.makeText(InboundActivity.this, "请先完成托盘扫码", Toast.LENGTH_SHORT).show();
+                    String msg = isPalletScanEnabled ? "请先完成托盘扫码" : "请先录入库位号";
+                    Toast.makeText(InboundActivity.this, msg, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 // 跳转到阀门绑定页面
@@ -179,7 +200,8 @@ public class InboundActivity extends Activity {
      */
     private void callInbound() {
         if (palletNo == null || palletNo.isEmpty()) {
-            Toast.makeText(this, "请先完成托盘扫码", Toast.LENGTH_SHORT).show();
+            String msg = isPalletScanEnabled ? "请先完成托盘扫码" : "请先录入库位号";
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -200,6 +222,53 @@ public class InboundActivity extends Activity {
             })
             .setNegativeButton("取消", null)
             .show();
+    }
+
+    private void togglePalletEntryMode(boolean enableScan) {
+        if (enableScan) {
+            layoutScanPallet.setVisibility(View.VISIBLE);
+            layoutManualBin.setVisibility(View.GONE);
+        } else {
+            layoutScanPallet.setVisibility(View.GONE);
+            layoutManualBin.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void fetchAvailableBin() {
+        Toast.makeText(this, "正在获取可用库位...", Toast.LENGTH_SHORT).show();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    AvailableBin availableBin = wmsApiService.getAvailableBin(InboundActivity.this);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (availableBin == null || availableBin.getBinCode() == null
+                                || availableBin.getBinCode().isEmpty()) {
+                                Toast.makeText(InboundActivity.this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            binCode = availableBin.getBinCode();
+                            palletNo = binCode;
+                            swapStation = DEFAULT_SWAP_STATION;
+                            tvPalletNo.setText(palletNo);
+                            tvLocationCode.setText(binCode);
+                            updateStatus(true);
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(InboundActivity.this, "获取库位失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }).start();
     }
     
     /**
@@ -280,6 +349,16 @@ public class InboundActivity extends Activity {
             scanHelper.stopScan();
         }
         super.onDestroy();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        boolean enabled = PreferenceUtil.getWmsPalletScanEnabled(this);
+        if (enabled != isPalletScanEnabled) {
+            isPalletScanEnabled = enabled;
+            togglePalletEntryMode(isPalletScanEnabled);
+        }
     }
 }
 

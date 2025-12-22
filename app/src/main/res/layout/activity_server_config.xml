@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="32dp"
+    android:background="#F5F5F5">
+
+    <!-- 标题 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="服务器配置"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#2196F3"
+        android:layout_marginBottom="32dp"
+        android:layout_gravity="center_horizontal" />
+
+    <!-- 配置表单 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:padding="24dp"
+        android:elevation="4dp">
+
+        <!-- WMS服务器地址 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="WMS服务器地址"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etWmsUrl"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="请输入WMS服务器地址"
+            android:padding="12dp"
+            android:background="#F5F5F5"
+            android:textSize="14sp"
+            android:inputType="textUri"
+            android:layout_marginBottom="24dp" />
+
+        <!-- AGV服务器地址 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AGV服务器地址"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etAgvUrl"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="请输入AGV服务器地址"
+            android:padding="12dp"
+            android:background="#F5F5F5"
+            android:textSize="14sp"
+            android:inputType="textUri"
+            android:layout_marginBottom="24dp" />
+
+        <!-- 说明文字 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="提示：\n• Android模拟器请使用 10.0.2.2 访问开发电脑的localhost\n• 真机调试请使用开发电脑的实际IP地址\n• 确保PDA和服务器在同一网络"
+            android:textSize="12sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="24dp" />
+
+        <!-- 按钮区域 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/btnReset"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="重置默认"
+                android:textSize="16sp"
+                android:background="#9E9E9E"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="12dp" />
+
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="保存"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:background="#2196F3"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
+

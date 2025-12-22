@@ -14,6 +14,8 @@ public class PreferenceUtil {
     private static final String KEY_EXPIRE_AT = "expire_at";
     private static final String KEY_WMS_BASE_URL = "wms_base_url";
     private static final String KEY_AGV_BASE_URL = "agv_base_url";
+    private static final String KEY_WMS_PALLET_SCAN_ENABLED = "wms_pallet_scan_enabled";
+    private static final String KEY_DEVICE_CODE = "device_code";
     
     /**
      * 保存Token
@@ -45,6 +47,22 @@ public class PreferenceUtil {
     public static String getUserName(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         return prefs.getString(KEY_USER_NAME, "");
+    }
+
+    /**
+     * 保存设备编码
+     */
+    public static void saveDeviceCode(Context context, String deviceCode) {
+        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putString(KEY_DEVICE_CODE, deviceCode).apply();
+    }
+
+    /**
+     * 获取设备编码
+     */
+    public static String getDeviceCode(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        return prefs.getString(KEY_DEVICE_CODE, "");
     }
     
     /**
@@ -85,6 +103,22 @@ public class PreferenceUtil {
     public static String getAgvBaseUrl(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         return prefs.getString(KEY_AGV_BASE_URL, null);
+    }
+
+    /**
+     * 保存是否启用WMS托盘扫码
+     */
+    public static void saveWmsPalletScanEnabled(Context context, boolean enabled) {
+        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putBoolean(KEY_WMS_PALLET_SCAN_ENABLED, enabled).apply();
+    }
+
+    /**
+     * 获取是否启用WMS托盘扫码（默认启用）
+     */
+    public static boolean getWmsPalletScanEnabled(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        return prefs.getBoolean(KEY_WMS_PALLET_SCAN_ENABLED, true);
     }
     
     /**

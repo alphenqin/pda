@@ -150,9 +150,24 @@ public class LoginActivity extends Activity {
             // 登录成功，保存token和用户信息
             String token = response.getData().getToken();
             String userName = response.getData().getUserName();
+            String deviceCode = etDeviceCode.getText().toString().trim();
             
             PreferenceUtil.saveToken(this, token);
             PreferenceUtil.saveUserName(this, userName);
+            PreferenceUtil.saveDeviceCode(this, deviceCode);
+
+            // 从WMS获取托盘扫码开关（不阻塞登录）
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        boolean enabled = wmsApiService.getPalletScanEnabled(deviceCode, LoginActivity.this);
+                        PreferenceUtil.saveWmsPalletScanEnabled(LoginActivity.this, enabled);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
             
             Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show();
             

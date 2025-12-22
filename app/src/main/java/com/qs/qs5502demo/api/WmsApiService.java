@@ -5,8 +5,10 @@ import android.util.Log;
 
 import com.google.gson.reflect.TypeToken;
 import com.qs.qs5502demo.model.ApiResponse;
+import com.qs.qs5502demo.model.AvailableBin;
 import com.qs.qs5502demo.model.LoginRequest;
 import com.qs.qs5502demo.model.LoginResponse;
+import com.qs.qs5502demo.model.PalletScanConfig;
 import com.qs.qs5502demo.model.PageResponse;
 import com.qs.qs5502demo.model.Pallet;
 import com.qs.qs5502demo.model.Task;
@@ -58,6 +60,45 @@ public class WmsApiService {
         return loginResponse;
     }
     
+    /**
+     * 获取托盘扫码开关
+     */
+    public boolean getPalletScanEnabled(String deviceCode, Context context) throws IOException {
+        String url = getBaseUrl() + "/pallet/scan/config";
+
+        Map<String, String> request = new HashMap<>();
+        request.put("deviceCode", deviceCode);
+
+        String json = HttpUtil.toJson(request);
+        String response = HttpUtil.post(url, json, context);
+
+        Type type = new TypeToken<ApiResponse<PalletScanConfig>>(){}.getType();
+        ApiResponse<PalletScanConfig> apiResponse = HttpUtil.fromJson(response, type);
+
+        if (apiResponse.isSuccess() && apiResponse.getData() != null) {
+            return apiResponse.getData().isEnabled();
+        } else {
+            throw new IOException(apiResponse.getMessage());
+        }
+    }
+
+    /**
+     * 获取可用库位
+     */
+    public AvailableBin getAvailableBin(Context context) throws IOException {
+        String url = getBaseUrl() + "/bin/available";
+        String response = HttpUtil.post(url, "{}", context);
+
+        Type type = new TypeToken<ApiResponse<AvailableBin>>(){}.getType();
+        ApiResponse<AvailableBin> apiResponse = HttpUtil.fromJson(response, type);
+
+        if (apiResponse.isSuccess() && apiResponse.getData() != null) {
+            return apiResponse.getData();
+        } else {
+            throw new IOException(apiResponse.getMessage());
+        }
+    }
+
     /**
      * 托盘扫码接口
      */
