@@ -43,6 +43,7 @@ public class InboundActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
         setContentView(R.layout.activity_inbound);
         
         wmsApiService = new WmsApiService(this);
@@ -110,8 +111,10 @@ public class InboundActivity extends Activity {
      * 托盘扫码
      */
     private void scanPallet() {
-        Toast.makeText(this, "请按扫描键扫描托盘条码", Toast.LENGTH_SHORT).show();
+        // 提示信息：说明扫描键位置
+        Toast.makeText(this, "请按设备侧面的扫描键（或直接扫描条码）", Toast.LENGTH_LONG).show();
         
+        // 启动扫描监听
         scanHelper.startScan(new ScanHelper.ScanCallback() {
             @Override
             public void onScanResult(String barcode) {

@@ -64,17 +64,21 @@ public class HttpUtil {
         Log.d(TAG, "POST " + url);
         Log.d(TAG, "Request: " + json);
         
-        Response response = client.newCall(request).execute();
-        String responseBody = response.body().string();
-        
-        Log.d(TAG, "Response Code: " + response.code());
-        Log.d(TAG, "Response: " + responseBody);
-        
-        if (!response.isSuccessful()) {
-            throw new IOException("Unexpected code " + response);
+        try (Response response = client.newCall(request).execute()) {
+            String responseBody = "";
+            if (response.body() != null) {
+                responseBody = response.body().string();
+            }
+            
+            Log.d(TAG, "Response Code: " + response.code());
+            Log.d(TAG, "Response: " + responseBody);
+            
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected code " + response);
+            }
+            
+            return responseBody;
         }
-        
-        return responseBody;
     }
     
     /**

@@ -25,12 +25,14 @@ public class LoginActivity extends Activity {
     private EditText etDeviceCode;
     private Button btnLogin;
     private TextView tvError;
+    private TextView tvConfig;
     
     private WmsApiService wmsApiService;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
         setContentView(R.layout.activity_login);
         
         // 检查是否已登录
@@ -53,10 +55,11 @@ public class LoginActivity extends Activity {
         etDeviceCode = (EditText) findViewById(R.id.etDeviceCode);
         btnLogin = (Button) findViewById(R.id.btnLogin);
         tvError = (TextView) findViewById(R.id.tvError);
+        tvConfig = (TextView) findViewById(R.id.tvConfig);
         
-        // 设置默认值（测试用）
-        etUsername.setText("pda001");
-        etPassword.setText("123456");
+        // 设置默认值
+        etUsername.setText("admin");
+        etPassword.setText("admin123");
         etDeviceCode.setText("PDA-01");
     }
     
@@ -65,6 +68,15 @@ public class LoginActivity extends Activity {
             @Override
             public void onClick(View v) {
                 performLogin();
+            }
+        });
+        
+        tvConfig.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // 打开服务器配置界面
+                Intent intent = new Intent(LoginActivity.this, ServerConfigActivity.class);
+                startActivity(intent);
             }
         });
     }

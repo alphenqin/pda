@@ -1,4 +1,4 @@
-#Thu Dec 04 16:35:14 CST 2025
-base.0=D\:\\360 project\\QS5502DEMO\\app\\build\\intermediates\\dex\\debug\\mergeDexDebug\\classes.dex
-path.0=classes.dex
+#Thu Dec 11 10:24:29 CST 2025
+base.0=D\:\\360project\\QS5502DEMO\\app\\build\\intermediates\\dex\\debug\\mergeDexDebug\\classes.dex
 renamed.0=classes.dex
+path.0=classes.dex

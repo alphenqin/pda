@@ -30,7 +30,7 @@
 * **WMS 接口基础地址**
 
 ```text
-http://wms-server.example.com/api
+http://localhost:8080/api
 ```
 
 * **AGV 调度系统接口基础地址**

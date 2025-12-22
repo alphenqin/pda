@@ -24,16 +24,46 @@ public class AgvApiService {
     
     private static final String TAG = "AgvApiService";
     
-    private static final String BASE_URL = ApiConfig.AGV_BASE_URL;
-    private static final String TASK_SENT_URL = BASE_URL + "/taskSent";
-    private static final String TASK_RESULT_URL = BASE_URL + "/taskResult";
+    private Context context;
+    
+    public AgvApiService() {
+    }
+    
+    public AgvApiService(Context context) {
+        this.context = context;
+        // 初始化ApiConfig
+        if (context != null) {
+            ApiConfig.init(context);
+        }
+    }
+    
+    /**
+     * 获取AGV基础URL
+     */
+    private String getBaseUrl() {
+        return ApiConfig.getAgvBaseUrl();
+    }
+    
+    /**
+     * 获取任务发送URL
+     */
+    private String getTaskSentUrl() {
+        return getBaseUrl() + "/taskSent";
+    }
+    
+    /**
+     * 获取任务结果查询URL
+     */
+    private String getTaskResultUrl() {
+        return getBaseUrl() + "/taskResult";
+    }
     
     /**
      * 发送任务（统一接口）
      */
     private AgvResponse sendTask(TaskSentRequest request, Context context) throws IOException {
         String json = HttpUtil.toJson(request);
-        String response = HttpUtil.post(TASK_SENT_URL, json, context);
+        String response = HttpUtil.post(getTaskSentUrl(), json, context);
         
         AgvResponse agvResponse = HttpUtil.fromJson(response, AgvResponse.class);
         
@@ -213,7 +243,7 @@ public class AgvApiService {
         params.put("outID", outID);
         
         String json = HttpUtil.toJson(params);
-        String response = HttpUtil.post(TASK_RESULT_URL, json, context);
+        String response = HttpUtil.post(getTaskResultUrl(), json, context);
         
         TaskResultResponse taskResult = HttpUtil.fromJson(response, TaskResultResponse.class);
         

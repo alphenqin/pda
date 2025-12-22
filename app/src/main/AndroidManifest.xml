@@ -24,6 +24,13 @@
             </intent-filter>
         </activity>
         
+        <!-- 服务器配置界面 -->
+        <activity
+            android:name="com.qs.qs5502demo.ServerConfigActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            android:label="服务器配置" />
+        
         <!-- 主界面 -->
         <activity
             android:launchMode="singleTask"

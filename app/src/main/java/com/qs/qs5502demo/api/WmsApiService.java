@@ -25,8 +25,6 @@ public class WmsApiService {
     
     private static final String TAG = "WmsApiService";
     
-    private static final String BASE_URL = ApiConfig.WMS_BASE_URL;
-    
     private Context context;
     
     public WmsApiService() {
@@ -35,13 +33,24 @@ public class WmsApiService {
     
     public WmsApiService(Context context) {
         this.context = context;
+        // 初始化ApiConfig
+        if (context != null) {
+            ApiConfig.init(context);
+        }
+    }
+    
+    /**
+     * 获取WMS基础URL
+     */
+    private String getBaseUrl() {
+        return ApiConfig.getWmsBaseUrl();
     }
     
     /**
      * 登录接口
      */
     public LoginResponse login(LoginRequest request) throws IOException {
-        String url = BASE_URL + "/auth/login";
+        String url = getBaseUrl() + "/auth/login";
         String json = HttpUtil.toJson(request);
         String response = HttpUtil.post(url, json, context);
         
@@ -53,7 +62,7 @@ public class WmsApiService {
      * 托盘扫码接口
      */
     public Pallet scanPallet(String barcode, Context context) throws IOException {
-        String url = BASE_URL + "/pallet/scan";
+        String url = getBaseUrl() + "/pallet/scan";
         
         Map<String, String> request = new HashMap<>();
         request.put("barcode", barcode);
@@ -75,7 +84,7 @@ public class WmsApiService {
      * 阀门绑定接口
      */
     public boolean bindValve(Valve valve, Context context) throws IOException {
-        String url = BASE_URL + "/valve/bind";
+        String url = getBaseUrl() + "/valve/bind";
         String json = HttpUtil.toJson(valve);
         String response = HttpUtil.post(url, json, context);
         
@@ -93,7 +102,7 @@ public class WmsApiService {
      * 阀门查询接口
      */
     public PageResponse<Valve> queryValves(Map<String, String> params, Context context) throws IOException {
-        String url = BASE_URL + "/valve/query";
+        String url = getBaseUrl() + "/valve/query";
         String json = HttpUtil.toJson(params);
         String response = HttpUtil.post(url, json, context);
         
@@ -111,7 +120,7 @@ public class WmsApiService {
      * 任务记录查询接口
      */
     public PageResponse<Task> queryTasks(Map<String, String> params, Context context) throws IOException {
-        String url = BASE_URL + "/task/query";
+        String url = getBaseUrl() + "/task/query";
         String json = HttpUtil.toJson(params);
         String response = HttpUtil.post(url, json, context);
         

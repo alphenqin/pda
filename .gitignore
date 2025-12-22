@@ -39,6 +39,26 @@ venv/
 target/
 .gradle/
 build/
+*.class
+
+# Android / Android Studio
+*.apk
+*.aab
+*.ap_
+*.dex
+*.iml
+local.properties
+keystore.properties
+*.jks
+*.keystore
+.externalNativeBuild/
+.cxx/
+captures/
+lint-results*.xml
+lint-results*.html
+*.log
+generated/
+**/build/
 
 # .NET / Visual Studio
 bin/
@@ -51,4 +71,3 @@ TestResults/
 # IDE settings
 .idea/
 .vscode/
-

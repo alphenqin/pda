@@ -6,17 +6,45 @@
 
 ```java
 // WMS接口基础地址
-public static final String WMS_BASE_URL = "http://wms-server.example.com/api";
+public static final String WMS_BASE_URL = "http://localhost:8080/api";
 
 // AGV调度系统接口基础地址
 public static final String AGV_BASE_URL = "http://192.168.1.20:81/pt";
 ```
 
 **当前配置**：
-- WMS地址：需要根据实际部署环境修改
+- WMS地址：已配置为 `http://localhost:8080/api`
 - AGV地址：已配置为 `http://192.168.1.20:81/pt`
 
-**请根据实际部署环境修改 WMS 地址。**
+### ⚠️ 重要提示：localhost 连接问题
+
+**问题说明：**
+- 如果PDA应用运行在Android设备或模拟器上，`localhost` 或 `127.0.0.1` 指向的是设备本身，而不是开发电脑
+- 因此会出现 "Failed to connect to localhost/127.0.0.1:8080" 错误
+
+**解决方案：**
+
+#### 方案1：Android模拟器
+如果使用Android模拟器，将地址改为：
+```java
+public static final String WMS_BASE_URL = "http://10.0.2.2:8080/api";
+```
+> `10.0.2.2` 是Android模拟器访问开发电脑localhost的特殊地址
+
+#### 方案2：真机调试
+如果使用真机，需要：
+1. 查看开发电脑的IP地址（Windows: `ipconfig`，Mac/Linux: `ifconfig`）
+2. 确保PDA和开发电脑在同一局域网
+3. 将地址改为开发电脑的实际IP，例如：
+```java
+public static final String WMS_BASE_URL = "http://192.168.1.100:8080/api";
+```
+
+#### 方案3：WMS服务器已部署
+如果WMS服务器已部署在其他服务器上，直接使用服务器地址：
+```java
+public static final String WMS_BASE_URL = "http://wms-server-ip:8080/api";
+```
 
 ## 2. 已实现的接口
 

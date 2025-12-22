@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="32dp"
-    android:background="#F5F5F5"
+    android:background="@color/background"
     android:gravity="center">
 
     <!-- Logo或标题 -->
@@ -12,9 +12,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="阀门仓储 PDA"
-        android:textSize="32sp"
+        android:textSize="36sp"
         android:textStyle="bold"
-        android:textColor="#2196F3"
+        android:textColor="@color/primary"
+        android:layout_marginBottom="16dp" />
+    
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="智能仓储管理系统"
+        android:textSize="16sp"
+        android:textColor="@color/text_secondary"
         android:layout_marginBottom="48dp" />
 
     <!-- 登录表单 -->
@@ -22,9 +30,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#FFFFFF"
-        android:padding="24dp"
-        android:elevation="4dp">
+        android:background="@drawable/card_background"
+        android:padding="32dp"
+        android:elevation="8dp">
 
         <TextView
             android:layout_width="wrap_content"
@@ -36,12 +44,14 @@
         <EditText
             android:id="@+id/etUsername"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:hint="请输入用户名"
-            android:padding="12dp"
-            android:background="#F5F5F5"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/edittext_background"
             android:textSize="16sp"
-            android:layout_marginBottom="16dp" />
+            android:textColorHint="@color/text_hint"
+            android:layout_marginBottom="20dp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -53,13 +63,15 @@
         <EditText
             android:id="@+id/etPassword"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:hint="请输入密码"
             android:inputType="textPassword"
-            android:padding="12dp"
-            android:background="#F5F5F5"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/edittext_background"
             android:textSize="16sp"
-            android:layout_marginBottom="16dp" />
+            android:textColorHint="@color/text_hint"
+            android:layout_marginBottom="20dp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -71,32 +83,49 @@
         <EditText
             android:id="@+id/etDeviceCode"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:hint="请输入设备编码"
-            android:padding="12dp"
-            android:background="#F5F5F5"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/edittext_background"
             android:textSize="16sp"
-            android:layout_marginBottom="24dp" />
+            android:textColorHint="@color/text_hint"
+            android:layout_marginBottom="28dp" />
 
         <Button
             android:id="@+id/btnLogin"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:text="登录"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:background="#2196F3"
-            android:textColor="#FFFFFF" />
+            android:background="@drawable/btn_primary"
+            android:textColor="@color/text_white"
+            android:elevation="4dp" />
+
+        <TextView
+            android:id="@+id/tvConfig"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="服务器配置"
+            android:textSize="15sp"
+            android:textColor="@color/primary"
+            android:gravity="center"
+            android:layout_marginTop="20dp"
+            android:padding="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground" />
 
         <TextView
             android:id="@+id/tvError"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text=""
-            android:textColor="#F44336"
+            android:textColor="@color/error"
             android:textSize="14sp"
             android:gravity="center"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:visibility="gone" />
     </LinearLayout>
 
