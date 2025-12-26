@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.google.gson.reflect.TypeToken;
+import com.qs.qs5502demo.model.AgvInfoResponse;
 import com.qs.qs5502demo.model.AgvResponse;
 import com.qs.qs5502demo.model.TaskPoint;
 import com.qs.qs5502demo.model.TaskResultResponse;
@@ -56,6 +57,13 @@ public class AgvApiService {
      */
     private String getTaskResultUrl() {
         return getBaseUrl() + "/taskResult";
+    }
+
+    /**
+     * 获取AGV信息URL
+     */
+    private String getAgvInfoUrl() {
+        return getBaseUrl() + "/agvInfo";
     }
     
     /**
@@ -251,6 +259,20 @@ public class AgvApiService {
             return taskResult;
         } else {
             throw new IOException(taskResult.getMessage());
+        }
+    }
+
+    /**
+     * 查询AGV信息
+     */
+    public AgvInfoResponse queryAgvInfo(Context context) throws IOException {
+        String response = HttpUtil.post(getAgvInfoUrl(), "{}", context);
+        AgvInfoResponse agvInfoResponse = HttpUtil.fromJson(response, AgvInfoResponse.class);
+
+        if (agvInfoResponse.isSuccess()) {
+            return agvInfoResponse;
+        } else {
+            throw new IOException(agvInfoResponse.getMessage());
         }
     }
 }

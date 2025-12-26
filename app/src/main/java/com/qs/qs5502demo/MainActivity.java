@@ -12,11 +12,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
+import com.qs.qs5502demo.api.AgvApiService;
 import com.qs.qs5502demo.inbound.InboundActivity;
 import com.qs.qs5502demo.outbound.OutboundActivity;
 import com.qs.qs5502demo.returnwarehouse.ReturnWarehouseActivity;
 import com.qs.qs5502demo.send.SendInspectionActivity;
 import com.qs.qs5502demo.task.TaskManageActivity;
+import com.qs.qs5502demo.model.AgvInfo;
+import com.qs.qs5502demo.model.AgvInfoResponse;
 import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
 
@@ -31,6 +34,7 @@ public class MainActivity extends Activity {
 	private Button btnLogout;
 	private Handler handler;
 	private Runnable updateTimeRunnable;
+	private AgvApiService agvApiService;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +54,7 @@ public class MainActivity extends Activity {
 		tvDateTime = (TextView) findViewById(R.id.tvDateTime);
 		tvUserInfo = (TextView) findViewById(R.id.tvUserInfo);
 		btnLogout = (Button) findViewById(R.id.btnLogout);
+		agvApiService = new AgvApiService(this);
 		
 		// 显示用户名
 		String userName = PreferenceUtil.getUserName(this);
@@ -76,21 +81,21 @@ public class MainActivity extends Activity {
 		findViewById(R.id.btnSendInspection).setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				startActivity(new Intent(MainActivity.this, SendInspectionActivity.class));
+				checkAgvIdleAndNavigate(v, SendInspectionActivity.class);
 			}
 		});
 		
 		findViewById(R.id.btnReturn).setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				startActivity(new Intent(MainActivity.this, ReturnWarehouseActivity.class));
+				checkAgvIdleAndNavigate(v, ReturnWarehouseActivity.class);
 			}
 		});
 		
 		findViewById(R.id.btnOutbound).setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				startActivity(new Intent(MainActivity.this, OutboundActivity.class));
+				checkAgvIdleAndNavigate(v, OutboundActivity.class);
 			}
 		});
 		
@@ -118,6 +123,47 @@ public class MainActivity extends Activity {
 		// 设置为东八区（Asia/Shanghai）
 		sdf.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Shanghai"));
 		tvDateTime.setText(sdf.format(new Date()));
+	}
+
+	private void checkAgvIdleAndNavigate(View triggerView, Class<?> targetActivity) {
+		triggerView.setEnabled(false);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				boolean hasIdle = false;
+				try {
+					AgvInfoResponse response = agvApiService.queryAgvInfo(MainActivity.this);
+					if (response != null && response.getData() != null) {
+						for (AgvInfo info : response.getData()) {
+							if ("0".equals(info.getAgvState())) {
+								hasIdle = true;
+								break;
+							}
+						}
+					}
+					boolean finalHasIdle = hasIdle;
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							triggerView.setEnabled(true);
+							if (finalHasIdle) {
+								startActivity(new Intent(MainActivity.this, targetActivity));
+							} else {
+								Toast.makeText(MainActivity.this, "AGV正忙，请稍后再试", Toast.LENGTH_SHORT).show();
+							}
+						}
+					});
+				} catch (Exception e) {
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							triggerView.setEnabled(true);
+							Toast.makeText(MainActivity.this, "AGV状态获取失败，请稍后再试", Toast.LENGTH_SHORT).show();
+						}
+					});
+				}
+			}
+		}).start();
 	}
 	
 	/**
