@@ -5,6 +5,9 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.qs.qs5502demo.util.PreferenceUtil;
 
@@ -74,6 +77,10 @@ public class HttpUtil {
             Log.d(TAG, "Response: " + responseBody);
             
             if (!response.isSuccessful()) {
+                String errorMessage = extractErrorMessage(responseBody);
+                if (errorMessage != null && !errorMessage.isEmpty()) {
+                    throw new IOException(errorMessage);
+                }
                 throw new IOException("Unexpected code " + response);
             }
             
@@ -100,5 +107,28 @@ public class HttpUtil {
      */
     public static <T> T fromJson(String json, Type type) {
         return gson.fromJson(json, type);
+    }
+
+    private static String extractErrorMessage(String responseBody) {
+        if (responseBody == null || responseBody.isEmpty()) {
+            return null;
+        }
+        try {
+            JsonElement element = new JsonParser().parse(responseBody);
+            if (element != null && element.isJsonObject()) {
+                JsonObject obj = element.getAsJsonObject();
+                JsonElement msg = obj.get("msg");
+                if (msg != null && !msg.isJsonNull()) {
+                    return msg.getAsString();
+                }
+                JsonElement message = obj.get("message");
+                if (message != null && !message.isJsonNull()) {
+                    return message.getAsString();
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to parse error response", e);
+        }
+        return null;
     }
 }

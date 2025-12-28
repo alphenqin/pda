@@ -9,7 +9,7 @@ public class ApiResponse<T> {
     @SerializedName("code")
     private int code;
     
-    @SerializedName("message")
+    @SerializedName("msg")
     private String message;
     
     @SerializedName("data")

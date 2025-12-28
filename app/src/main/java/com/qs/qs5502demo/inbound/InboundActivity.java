@@ -11,14 +11,20 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
-import com.qs.qs5502demo.api.AgvApiService;
 import com.qs.qs5502demo.api.WmsApiService;
-import com.qs.qs5502demo.model.AgvResponse;
-import com.qs.qs5502demo.model.AvailableBin;
+import com.qs.qs5502demo.model.AvailablePallet;
 import com.qs.qs5502demo.model.Pallet;
+import com.qs.qs5502demo.model.PalletTypeOption;
+import com.qs.qs5502demo.model.Task;
+import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
 import com.qs.qs5502demo.util.ScanHelper;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class InboundActivity extends Activity {
 
@@ -34,9 +40,9 @@ public class InboundActivity extends Activity {
     private Button btnBindValve;
     private Button btnCallInbound;
     private Button btnBack;
+    private TextView tvPalletType;
     
     private WmsApiService wmsApiService;
-    private AgvApiService agvApiService;
     private ScanHelper scanHelper;
     
     private String palletNo;
@@ -46,6 +52,8 @@ public class InboundActivity extends Activity {
     private String matCode;  // 阀门物料编码
     private boolean isValveBound = false;  // 阀门是否已绑定
     private boolean isPalletScanEnabled = true;
+    private final List<PalletTypeOption> palletTypeList = new ArrayList<>();
+    private PalletTypeOption selectedPalletType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +62,6 @@ public class InboundActivity extends Activity {
         setContentView(R.layout.activity_inbound);
         
         wmsApiService = new WmsApiService(this);
-        agvApiService = new AgvApiService();
         scanHelper = new ScanHelper(this);
         
         initViews();
@@ -72,6 +79,7 @@ public class InboundActivity extends Activity {
         btnBindValve = (Button) findViewById(R.id.btnBindValve);
         btnCallInbound = (Button) findViewById(R.id.btnCallInbound);
         btnBack = (Button) findViewById(R.id.btnBack);
+        tvPalletType = (TextView) findViewById(R.id.tvPalletType);
         
         isPalletScanEnabled = PreferenceUtil.getWmsPalletScanEnabled(this);
         togglePalletEntryMode(isPalletScanEnabled);
@@ -98,7 +106,7 @@ public class InboundActivity extends Activity {
         btnPickBin.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                fetchAvailableBin();
+                handlePickPallet();
             }
         });
         
@@ -231,28 +239,46 @@ public class InboundActivity extends Activity {
         } else {
             layoutScanPallet.setVisibility(View.GONE);
             layoutManualBin.setVisibility(View.VISIBLE);
+            if (palletTypeList.isEmpty()) {
+                loadPalletTypes(false);
+            }
         }
     }
 
-    private void fetchAvailableBin() {
-        Toast.makeText(this, "正在获取可用库位...", Toast.LENGTH_SHORT).show();
+    private void handlePickPallet() {
+        if (palletTypeList.isEmpty()) {
+            loadPalletTypes(true);
+            return;
+        }
+        showPalletTypeDialog();
+    }
+
+    private void fetchAvailablePallet(PalletTypeOption palletTypeOption) {
+        if (palletTypeOption == null || palletTypeOption.getId() == null) {
+            Toast.makeText(this, "托盘类型无效", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Toast.makeText(this, "正在获取可用托盘...", Toast.LENGTH_SHORT).show();
 
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    AvailableBin availableBin = wmsApiService.getAvailableBin(InboundActivity.this);
+                    AvailablePallet availablePallet = wmsApiService.getAvailablePallet(
+                        palletTypeOption.getId(), InboundActivity.this);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (availableBin == null || availableBin.getBinCode() == null
-                                || availableBin.getBinCode().isEmpty()) {
-                                Toast.makeText(InboundActivity.this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
+                            if (availablePallet == null || availablePallet.getPalletNo() == null
+                                || availablePallet.getPalletNo().isEmpty()) {
+                                Toast.makeText(InboundActivity.this, "未获取到可用托盘", Toast.LENGTH_SHORT).show();
                                 return;
                             }
-                            binCode = availableBin.getBinCode();
-                            palletNo = binCode;
+                            palletNo = availablePallet.getPalletNo();
+                            binCode = availablePallet.getBinCode();
                             swapStation = DEFAULT_SWAP_STATION;
+                            palletType = palletTypeOption.getTypeCode();
                             tvPalletNo.setText(palletNo);
                             tvLocationCode.setText(binCode);
                             updateStatus(true);
@@ -263,12 +289,114 @@ public class InboundActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(InboundActivity.this, "获取库位失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(InboundActivity.this, "选取托盘失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
             }
         }).start();
+    }
+
+    private void loadPalletTypes(boolean showDialog) {
+        Toast.makeText(this, "正在获取托盘类型...", Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    List<PalletTypeOption> types = wmsApiService.listPalletTypes(InboundActivity.this);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            palletTypeList.clear();
+                            if (types != null) {
+                                palletTypeList.addAll(types);
+                            }
+                            if (palletTypeList.isEmpty()) {
+                                Toast.makeText(InboundActivity.this, "未获取到托盘类型", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            if (selectedPalletType != null) {
+                                boolean stillExists = false;
+                                for (PalletTypeOption option : palletTypeList) {
+                                    if (option.getId() != null && option.getId().equals(selectedPalletType.getId())) {
+                                        stillExists = true;
+                                        break;
+                                    }
+                                }
+                                if (!stillExists) {
+                                    updateSelectedPalletType(null);
+                                }
+                            }
+                            if (showDialog) {
+                                showPalletTypeDialog();
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(InboundActivity.this, "获取托盘类型失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
+
+    private void showPalletTypeDialog() {
+        if (palletTypeList.isEmpty()) {
+            Toast.makeText(this, "暂无托盘类型可选", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] items = new String[palletTypeList.size()];
+        int selectedIndex = -1;
+        for (int i = 0; i < palletTypeList.size(); i++) {
+            PalletTypeOption option = palletTypeList.get(i);
+            String name = option.getTypeName() != null ? option.getTypeName() : "";
+            String code = option.getTypeCode() != null ? option.getTypeCode() : "";
+            String label = name.isEmpty() ? code : name + (code.isEmpty() ? "" : " (" + code + ")");
+            items[i] = label.isEmpty() ? "未命名" : label;
+            if (selectedPalletType != null && option.getId() != null && option.getId().equals(selectedPalletType.getId())) {
+                selectedIndex = i;
+            }
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("选择托盘类型")
+            .setSingleChoiceItems(items, selectedIndex, null)
+            .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface dialog, int which) {
+                    AlertDialog alert = (AlertDialog) dialog;
+                    int index = alert.getListView().getCheckedItemPosition();
+                    if (index >= 0 && index < palletTypeList.size()) {
+                        PalletTypeOption option = palletTypeList.get(index);
+                        updateSelectedPalletType(option);
+                        fetchAvailablePallet(option);
+                    }
+                }
+            })
+            .setNegativeButton("取消", null)
+            .show();
+    }
+
+    private void updateSelectedPalletType(PalletTypeOption option) {
+        selectedPalletType = option;
+        if (option == null) {
+            tvPalletType.setText("未选择");
+            return;
+        }
+        String label = option.getTypeName() != null ? option.getTypeName() : "";
+        if (label.isEmpty()) {
+            label = option.getTypeCode() != null ? option.getTypeCode() : "";
+        }
+        tvPalletType.setText(label.isEmpty() ? "未命名" : label);
+        palletNo = null;
+        binCode = null;
+        tvPalletNo.setText("--");
+        tvLocationCode.setText("--");
+        updateStatus(false);
     }
     
     /**
@@ -286,22 +414,30 @@ public class InboundActivity extends Activity {
                     // 生成任务编号
                     String outID = DateUtil.generateTaskNo("R");
                     
-                    // 调用AGV接口创建入库任务
-                    AgvResponse response = agvApiService.callInbound(
-                        swapStation, binCode, matCode, outID, InboundActivity.this);
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_INBOUND);
+                    params.put("outID", outID);
+                    params.put("deviceCode", PreferenceUtil.getDeviceCode(InboundActivity.this));
+                    params.put("palletNo", palletNo);
+                    params.put("fromBinCode", swapStation);
+                    params.put("toBinCode", binCode);
+                    if (matCode != null) {
+                        params.put("matCode", matCode);
+                    }
+                    TaskDispatchResult result = wmsApiService.dispatchTask(params, InboundActivity.this);
                     
                     // 更新UI
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (response != null && response.isSuccess()) {
+                            if (result != null) {
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 updateStatus(true);
                                 Toast.makeText(InboundActivity.this, 
-                                    "呼叫入库成功，任务号：" + outID, 
+                                    "呼叫入库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
                             } else {
-                                String msg = response != null ? response.getMessage() : "呼叫入库失败";
-                                Toast.makeText(InboundActivity.this, msg, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(InboundActivity.this, "呼叫入库失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });

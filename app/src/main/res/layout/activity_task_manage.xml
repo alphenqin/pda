@@ -72,6 +72,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:hint="yyyy-MM-dd"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="true"
+                android:longClickable="false"
                 android:textSize="16sp"
                 android:padding="8dp"
                 android:background="#F0F0F0" />
@@ -96,6 +100,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:hint="yyyy-MM-dd"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="true"
+                android:longClickable="false"
                 android:textSize="16sp"
                 android:padding="8dp"
                 android:background="#F0F0F0" />

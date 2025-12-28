@@ -2,6 +2,7 @@ package com.qs.qs5502demo.task;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,16 +14,20 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
-import com.qs.qs5502demo.api.AgvApiService;
 import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.model.PageResponse;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import android.support.v7.widget.RecyclerView;
@@ -39,7 +44,6 @@ public class TaskManageActivity extends Activity {
     private RecyclerView rvTaskList;
     
     private WmsApiService wmsApiService;
-    private AgvApiService agvApiService;
     private TaskAdapter adapter;
     private List<Task> taskList;
     private Task selectedTask;
@@ -51,7 +55,6 @@ public class TaskManageActivity extends Activity {
         setContentView(R.layout.activity_task_manage);
         
         wmsApiService = new WmsApiService(this);
-        agvApiService = new AgvApiService();
         taskList = new ArrayList<>();
         
         initViews();
@@ -69,7 +72,13 @@ public class TaskManageActivity extends Activity {
         btnRefresh = (Button) findViewById(R.id.btnRefresh);
         btnBack = (Button) findViewById(R.id.btnBack);
         rvTaskList = (RecyclerView) findViewById(R.id.rvTaskList);
-        
+
+        String today = DateUtil.getCurrentDate();
+        etStartDate.setText(today);
+        etEndDate.setText(today);
+        setupDatePicker(etStartDate);
+        setupDatePicker(etEndDate);
+
         // 设置RecyclerView
         rvTaskList.setLayoutManager(new LinearLayoutManager(this));
         adapter = new TaskAdapter();
@@ -112,11 +121,19 @@ public class TaskManageActivity extends Activity {
     private void searchTasks() {
         String startDate = etStartDate.getText().toString().trim();
         String endDate = etEndDate.getText().toString().trim();
-        
+
         // 如果都为空，默认查询当天
         if (startDate.isEmpty() && endDate.isEmpty()) {
-            startDate = DateUtil.getCurrentDate();
-            endDate = DateUtil.getCurrentDate();
+            String today = DateUtil.getCurrentDate();
+            startDate = today;
+            endDate = today;
+            etStartDate.setText(today);
+            etEndDate.setText(today);
+        }
+
+        if (!startDate.isEmpty() && !endDate.isEmpty() && startDate.compareTo(endDate) > 0) {
+            Toast.makeText(this, "起始日期不能晚于结束日期", Toast.LENGTH_SHORT).show();
+            return;
         }
         
         // 构建查询参数
@@ -129,6 +146,7 @@ public class TaskManageActivity extends Activity {
         }
         params.put("pageNum", "1");
         params.put("pageSize", "20");
+        params.put("deviceCode", PreferenceUtil.getDeviceCode(TaskManageActivity.this));
         
         Toast.makeText(this, "正在查询...", Toast.LENGTH_SHORT).show();
         
@@ -165,6 +183,44 @@ public class TaskManageActivity extends Activity {
                 }
             }
         }).start();
+    }
+
+    private void setupDatePicker(final EditText target) {
+        target.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showDatePicker(target);
+            }
+        });
+    }
+
+    private void showDatePicker(final EditText target) {
+        Calendar calendar = Calendar.getInstance();
+        String dateText = target.getText().toString().trim();
+        if (!dateText.isEmpty()) {
+            try {
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                Date parsed = format.parse(dateText);
+                if (parsed != null) {
+                    calendar.setTime(parsed);
+                }
+            } catch (ParseException e) {
+                // Keep default as today if parsing fails.
+            }
+        }
+
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        new DatePickerDialog(this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(android.widget.DatePicker view, int year, int month, int dayOfMonth) {
+                Calendar selected = Calendar.getInstance();
+                selected.set(year, month, dayOfMonth);
+                target.setText(DateUtil.formatDate(selected.getTime()));
+            }
+        }, year, month, day).show();
     }
     
     /**
@@ -205,8 +261,8 @@ public class TaskManageActivity extends Activity {
             public void run() {
                 try {
                     String outID = selectedTask.getOutID();
-                    String operator = PreferenceUtil.getUserName(TaskManageActivity.this);
-                    boolean success = agvApiService.cancelTask(outID, operator, TaskManageActivity.this);
+                    String deviceCode = PreferenceUtil.getDeviceCode(TaskManageActivity.this);
+                    boolean success = wmsApiService.cancelTask(outID, deviceCode, TaskManageActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override

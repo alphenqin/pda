@@ -12,14 +12,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
-import com.qs.qs5502demo.api.AgvApiService;
+import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.inbound.InboundActivity;
 import com.qs.qs5502demo.outbound.OutboundActivity;
 import com.qs.qs5502demo.returnwarehouse.ReturnWarehouseActivity;
 import com.qs.qs5502demo.send.SendInspectionActivity;
 import com.qs.qs5502demo.task.TaskManageActivity;
-import com.qs.qs5502demo.model.AgvInfo;
-import com.qs.qs5502demo.model.AgvInfoResponse;
+import com.qs.qs5502demo.model.InboundLockStatus;
 import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
 
@@ -32,9 +31,18 @@ public class MainActivity extends Activity {
 	private TextView tvDateTime;
 	private TextView tvUserInfo;
 	private Button btnLogout;
+	private Button btnSendInspection;
+	private Button btnReturn;
+	private Button btnOutbound;
+	private CharSequence sendInspectionLabel;
+	private CharSequence returnLabel;
+	private CharSequence outboundLabel;
 	private Handler handler;
 	private Runnable updateTimeRunnable;
-	private AgvApiService agvApiService;
+	private Runnable inboundLockRunnable;
+	private WmsApiService wmsApiService;
+	private boolean inboundLocked = false;
+	private static final long INBOUND_LOCK_POLL_MS = 5000;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +62,13 @@ public class MainActivity extends Activity {
 		tvDateTime = (TextView) findViewById(R.id.tvDateTime);
 		tvUserInfo = (TextView) findViewById(R.id.tvUserInfo);
 		btnLogout = (Button) findViewById(R.id.btnLogout);
-		agvApiService = new AgvApiService(this);
+		btnSendInspection = (Button) findViewById(R.id.btnSendInspection);
+		btnReturn = (Button) findViewById(R.id.btnReturn);
+		btnOutbound = (Button) findViewById(R.id.btnOutbound);
+		sendInspectionLabel = btnSendInspection.getText();
+		returnLabel = btnReturn.getText();
+		outboundLabel = btnOutbound.getText();
+		wmsApiService = new WmsApiService(this);
 		
 		// 显示用户名
 		String userName = PreferenceUtil.getUserName(this);
@@ -78,24 +92,24 @@ public class MainActivity extends Activity {
 			}
 		});
 		
-		findViewById(R.id.btnSendInspection).setOnClickListener(new OnClickListener() {
+		btnSendInspection.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				checkAgvIdleAndNavigate(v, SendInspectionActivity.class);
+				navigateIfUnlocked(SendInspectionActivity.class);
 			}
 		});
 		
-		findViewById(R.id.btnReturn).setOnClickListener(new OnClickListener() {
+		btnReturn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				checkAgvIdleAndNavigate(v, ReturnWarehouseActivity.class);
+				navigateIfUnlocked(ReturnWarehouseActivity.class);
 			}
 		});
 		
-		findViewById(R.id.btnOutbound).setOnClickListener(new OnClickListener() {
+		btnOutbound.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				checkAgvIdleAndNavigate(v, OutboundActivity.class);
+				navigateIfUnlocked(OutboundActivity.class);
 			}
 		});
 		
@@ -116,6 +130,8 @@ public class MainActivity extends Activity {
 			}
 		};
 		handler.post(updateTimeRunnable);
+
+		startInboundLockPolling();
 	}
 	
 	private void updateDateTime() {
@@ -125,45 +141,69 @@ public class MainActivity extends Activity {
 		tvDateTime.setText(sdf.format(new Date()));
 	}
 
-	private void checkAgvIdleAndNavigate(View triggerView, Class<?> targetActivity) {
-		triggerView.setEnabled(false);
+	private void navigateIfUnlocked(Class<?> targetActivity) {
+		if (inboundLocked) {
+			Toast.makeText(MainActivity.this, "入库任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		startActivity(new Intent(MainActivity.this, targetActivity));
+	}
+
+	private void startInboundLockPolling() {
+		inboundLockRunnable = new Runnable() {
+			@Override
+			public void run() {
+				refreshInboundLockStatus();
+				handler.postDelayed(this, INBOUND_LOCK_POLL_MS);
+			}
+		};
+		handler.post(inboundLockRunnable);
+	}
+
+	private void refreshInboundLockStatus() {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				boolean hasIdle = false;
 				try {
-					AgvInfoResponse response = agvApiService.queryAgvInfo(MainActivity.this);
-					if (response != null && response.getData() != null) {
-						for (AgvInfo info : response.getData()) {
-							if ("0".equals(info.getAgvState())) {
-								hasIdle = true;
-								break;
-							}
-						}
-					}
-					boolean finalHasIdle = hasIdle;
+					InboundLockStatus status = wmsApiService.getInboundLockStatus(MainActivity.this);
+					boolean locked = status != null && status.isLocked();
+					long count = status != null ? status.getCount() : 0;
 					runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							triggerView.setEnabled(true);
-							if (finalHasIdle) {
-								startActivity(new Intent(MainActivity.this, targetActivity));
-							} else {
-								Toast.makeText(MainActivity.this, "AGV正忙，请稍后再试", Toast.LENGTH_SHORT).show();
-							}
+							applyInboundLock(locked, count);
 						}
 					});
 				} catch (Exception e) {
-					runOnUiThread(new Runnable() {
-						@Override
-						public void run() {
-							triggerView.setEnabled(true);
-							Toast.makeText(MainActivity.this, "AGV状态获取失败，请稍后再试", Toast.LENGTH_SHORT).show();
-						}
-					});
+					// Keep current state on error.
 				}
 			}
 		}).start();
+	}
+
+	private void applyInboundLock(boolean locked, long count) {
+		if (locked != inboundLocked) {
+			inboundLocked = locked;
+			String message = locked
+				? "入库任务执行中，送检/回库/出库已锁定"
+				: "入库任务已完成，送检/回库/出库已解锁";
+			Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+		}
+		boolean enabled = !inboundLocked;
+		updateLockedButton(btnSendInspection, sendInspectionLabel, enabled);
+		updateLockedButton(btnReturn, returnLabel, enabled);
+		updateLockedButton(btnOutbound, outboundLabel, enabled);
+	}
+
+	private void updateLockedButton(Button button, CharSequence label, boolean enabled) {
+		button.setEnabled(enabled);
+		if (enabled) {
+			button.setAlpha(1.0f);
+			button.setText(label);
+		} else {
+			button.setAlpha(0.4f);
+			button.setText(label + "（入库锁定）");
+		}
 	}
 	
 	/**
@@ -203,6 +243,9 @@ public class MainActivity extends Activity {
 	protected void onDestroy() {
 		if (handler != null && updateTimeRunnable != null) {
 			handler.removeCallbacks(updateTimeRunnable);
+		}
+		if (handler != null && inboundLockRunnable != null) {
+			handler.removeCallbacks(inboundLockRunnable);
 		}
 		super.onDestroy();
 	}

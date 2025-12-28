@@ -6,143 +6,143 @@
 6
 7    <uses-sdk
 8        android:minSdkVersion="8"
-8-->D:\projects\pda\app\src\main\AndroidManifest.xml
+8-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml
 9        android:targetSdkVersion="23" />
-9-->D:\projects\pda\app\src\main\AndroidManifest.xml
+9-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml
 10
 11    <uses-permission android:name="android.permission.INTERNET" />
-11-->D:\projects\pda\app\src\main\AndroidManifest.xml:6:5-67
-11-->D:\projects\pda\app\src\main\AndroidManifest.xml:6:22-64
+11-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:6:5-67
+11-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:6:22-64
 12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-12-->D:\projects\pda\app\src\main\AndroidManifest.xml:7:5-79
-12-->D:\projects\pda\app\src\main\AndroidManifest.xml:7:22-76
+12-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:7:5-79
+12-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:7:22-76
 13
 14    <application
-14-->D:\projects\pda\app\src\main\AndroidManifest.xml:9:5-81:19
+14-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:9:5-81:19
 15        android:allowBackup="true"
-15-->D:\projects\pda\app\src\main\AndroidManifest.xml:10:9-35
+15-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:10:9-35
 16        android:debuggable="true"
 17        android:icon="@drawable/ic_launcher"
-17-->D:\projects\pda\app\src\main\AndroidManifest.xml:11:9-45
+17-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:11:9-45
 18        android:label="@string/app_name"
-18-->D:\projects\pda\app\src\main\AndroidManifest.xml:12:9-41
+18-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:12:9-41
 19        android:theme="@style/AppTheme" >
-19-->D:\projects\pda\app\src\main\AndroidManifest.xml:13:9-40
+19-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:13:9-40
 20
 21        <!-- 登录界面 -->
 22        <activity
-22-->D:\projects\pda\app\src\main\AndroidManifest.xml:16:9-25:20
+22-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:16:9-25:20
 23            android:name="com.qs.qs5502demo.LoginActivity"
-23-->D:\projects\pda\app\src\main\AndroidManifest.xml:17:13-59
+23-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:17:13-59
 24            android:label="登录"
-24-->D:\projects\pda\app\src\main\AndroidManifest.xml:20:13-31
+24-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:20:13-31
 25            android:screenOrientation="portrait"
-25-->D:\projects\pda\app\src\main\AndroidManifest.xml:18:13-49
+25-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:18:13-49
 26            android:windowSoftInputMode="stateAlwaysHidden" >
-26-->D:\projects\pda\app\src\main\AndroidManifest.xml:19:13-60
+26-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:19:13-60
 27            <intent-filter>
-27-->D:\projects\pda\app\src\main\AndroidManifest.xml:21:13-24:29
+27-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:21:13-24:29
 28                <action android:name="android.intent.action.MAIN" />
-28-->D:\projects\pda\app\src\main\AndroidManifest.xml:22:17-69
-28-->D:\projects\pda\app\src\main\AndroidManifest.xml:22:25-66
+28-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:22:17-69
+28-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:22:25-66
 29
 30                <category android:name="android.intent.category.LAUNCHER" />
-30-->D:\projects\pda\app\src\main\AndroidManifest.xml:23:17-77
-30-->D:\projects\pda\app\src\main\AndroidManifest.xml:23:27-74
+30-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:23:17-77
+30-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:23:27-74
 31            </intent-filter>
 32        </activity>
 33
 34        <!-- 服务器配置界面 -->
 35        <activity
-35-->D:\projects\pda\app\src\main\AndroidManifest.xml:28:9-32:37
+35-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:28:9-32:37
 36            android:name="com.qs.qs5502demo.ServerConfigActivity"
-36-->D:\projects\pda\app\src\main\AndroidManifest.xml:29:13-66
+36-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:29:13-66
 37            android:label="服务器配置"
-37-->D:\projects\pda\app\src\main\AndroidManifest.xml:32:13-34
+37-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:32:13-34
 38            android:screenOrientation="portrait"
-38-->D:\projects\pda\app\src\main\AndroidManifest.xml:30:13-49
+38-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:30:13-49
 39            android:windowSoftInputMode="stateAlwaysHidden" />
-39-->D:\projects\pda\app\src\main\AndroidManifest.xml:31:13-60
+39-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:31:13-60
 40
 41        <!-- 主界面 -->
 42        <activity
-42-->D:\projects\pda\app\src\main\AndroidManifest.xml:35:9-40:48
+42-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:35:9-40:48
 43            android:name="com.qs.qs5502demo.MainActivity"
-43-->D:\projects\pda\app\src\main\AndroidManifest.xml:38:13-58
+43-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:38:13-58
 44            android:label="@string/app_name"
-44-->D:\projects\pda\app\src\main\AndroidManifest.xml:40:13-45
+44-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:40:13-45
 45            android:launchMode="singleTask"
-45-->D:\projects\pda\app\src\main\AndroidManifest.xml:36:13-44
+45-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:36:13-44
 46            android:screenOrientation="portrait"
-46-->D:\projects\pda\app\src\main\AndroidManifest.xml:37:13-49
+46-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:37:13-49
 47            android:windowSoftInputMode="stateAlwaysHidden" />
-47-->D:\projects\pda\app\src\main\AndroidManifest.xml:39:13-60
+47-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:39:13-60
 48
 49        <!-- 入库模块 -->
 50        <activity
-50-->D:\projects\pda\app\src\main\AndroidManifest.xml:43:9-46:63
+50-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:43:9-46:63
 51            android:name="com.qs.qs5502demo.inbound.InboundActivity"
-51-->D:\projects\pda\app\src\main\AndroidManifest.xml:44:13-69
+51-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:44:13-69
 52            android:screenOrientation="portrait"
-52-->D:\projects\pda\app\src\main\AndroidManifest.xml:45:13-49
+52-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:45:13-49
 53            android:windowSoftInputMode="stateAlwaysHidden" />
-53-->D:\projects\pda\app\src\main\AndroidManifest.xml:46:13-60
+53-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:46:13-60
 54        <activity
-54-->D:\projects\pda\app\src\main\AndroidManifest.xml:48:9-51:63
+54-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:48:9-51:63
 55            android:name="com.qs.qs5502demo.inbound.BindValveActivity"
-55-->D:\projects\pda\app\src\main\AndroidManifest.xml:49:13-71
+55-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:49:13-71
 56            android:screenOrientation="portrait"
-56-->D:\projects\pda\app\src\main\AndroidManifest.xml:50:13-49
+56-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:50:13-49
 57            android:windowSoftInputMode="stateAlwaysHidden" />
-57-->D:\projects\pda\app\src\main\AndroidManifest.xml:51:13-60
+57-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:51:13-60
 58
 59        <!-- 送检模块 -->
 60        <activity
-60-->D:\projects\pda\app\src\main\AndroidManifest.xml:54:9-57:63
+60-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:54:9-57:63
 61            android:name="com.qs.qs5502demo.send.SendInspectionActivity"
-61-->D:\projects\pda\app\src\main\AndroidManifest.xml:55:13-73
+61-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:55:13-73
 62            android:screenOrientation="portrait"
-62-->D:\projects\pda\app\src\main\AndroidManifest.xml:56:13-49
+62-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:56:13-49
 63            android:windowSoftInputMode="stateAlwaysHidden" />
-63-->D:\projects\pda\app\src\main\AndroidManifest.xml:57:13-60
+63-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:57:13-60
 64        <activity
-64-->D:\projects\pda\app\src\main\AndroidManifest.xml:59:9-62:63
+64-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:59:9-62:63
 65            android:name="com.qs.qs5502demo.send.SelectValveActivity"
-65-->D:\projects\pda\app\src\main\AndroidManifest.xml:60:13-70
+65-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:60:13-70
 66            android:screenOrientation="portrait"
-66-->D:\projects\pda\app\src\main\AndroidManifest.xml:61:13-49
+66-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:61:13-49
 67            android:windowSoftInputMode="stateAlwaysHidden" />
-67-->D:\projects\pda\app\src\main\AndroidManifest.xml:62:13-60
+67-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:62:13-60
 68
 69        <!-- 回库模块 -->
 70        <activity
-70-->D:\projects\pda\app\src\main\AndroidManifest.xml:65:9-68:63
+70-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:65:9-68:63
 71            android:name="com.qs.qs5502demo.returnwarehouse.ReturnWarehouseActivity"
-71-->D:\projects\pda\app\src\main\AndroidManifest.xml:66:13-85
+71-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:66:13-85
 72            android:screenOrientation="portrait"
-72-->D:\projects\pda\app\src\main\AndroidManifest.xml:67:13-49
+72-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:67:13-49
 73            android:windowSoftInputMode="stateAlwaysHidden" />
-73-->D:\projects\pda\app\src\main\AndroidManifest.xml:68:13-60
+73-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:68:13-60
 74
 75        <!-- 出库模块 -->
 76        <activity
-76-->D:\projects\pda\app\src\main\AndroidManifest.xml:71:9-74:63
+76-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:71:9-74:63
 77            android:name="com.qs.qs5502demo.outbound.OutboundActivity"
-77-->D:\projects\pda\app\src\main\AndroidManifest.xml:72:13-71
+77-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:72:13-71
 78            android:screenOrientation="portrait"
-78-->D:\projects\pda\app\src\main\AndroidManifest.xml:73:13-49
+78-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:73:13-49
 79            android:windowSoftInputMode="stateAlwaysHidden" />
-79-->D:\projects\pda\app\src\main\AndroidManifest.xml:74:13-60
+79-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:74:13-60
 80
 81        <!-- 任务管理模块 -->
 82        <activity
-82-->D:\projects\pda\app\src\main\AndroidManifest.xml:77:9-80:63
+82-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:77:9-80:63
 83            android:name="com.qs.qs5502demo.task.TaskManageActivity"
-83-->D:\projects\pda\app\src\main\AndroidManifest.xml:78:13-69
+83-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:78:13-69
 84            android:screenOrientation="portrait"
-84-->D:\projects\pda\app\src\main\AndroidManifest.xml:79:13-49
+84-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:79:13-49
 85            android:windowSoftInputMode="stateAlwaysHidden" />
-85-->D:\projects\pda\app\src\main\AndroidManifest.xml:80:13-60
+85-->/Users/qin/Documents/projects/wms-pda/pda/app/src/main/AndroidManifest.xml:80:13-60
 86    </application>
 87
 88</manifest>

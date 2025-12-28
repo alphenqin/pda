@@ -11,11 +11,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
-import com.qs.qs5502demo.api.AgvApiService;
-import com.qs.qs5502demo.model.AgvResponse;
+import com.qs.qs5502demo.api.WmsApiService;
+import com.qs.qs5502demo.model.Task;
+import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.Valve;
 import com.qs.qs5502demo.send.SelectValveActivity;
 import com.qs.qs5502demo.util.DateUtil;
+import com.qs.qs5502demo.util.PreferenceUtil;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class OutboundActivity extends Activity {
     
@@ -28,7 +33,7 @@ public class OutboundActivity extends Activity {
     private Button btnEmptyPalletReturn2;
     private Button btnBack;
     
-    private AgvApiService agvApiService;
+    private WmsApiService wmsApiService;
     
     private String palletNo;
     private String binCode;
@@ -42,7 +47,7 @@ public class OutboundActivity extends Activity {
         
         setContentView(R.layout.activity_outbound);
         
-        agvApiService = new AgvApiService();
+        wmsApiService = new WmsApiService(this);
         
         initViews();
         setupListeners();
@@ -138,21 +143,29 @@ public class OutboundActivity extends Activity {
                     // 生成任务编号
                     String outID = DateUtil.generateTaskNo("C");
                     
-                    // 调用AGV接口创建出库任务
-                    AgvResponse response = agvApiService.callOutbound(
-                        binCode, swapStation, matCode, outID, OutboundActivity.this);
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_OUTBOUND);
+                    params.put("outID", outID);
+                    params.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
+                    params.put("palletNo", palletNo);
+                    params.put("fromBinCode", binCode);
+                    params.put("toBinCode", swapStation);
+                    if (matCode != null) {
+                        params.put("matCode", matCode);
+                    }
+                    TaskDispatchResult result = wmsApiService.dispatchTask(params, OutboundActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (response != null && response.isSuccess()) {
+                            if (result != null) {
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 updateStatus(true);
                                 Toast.makeText(OutboundActivity.this, 
-                                    "呼叫出库成功，任务号：" + outID, 
+                                    "呼叫出库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
                             } else {
-                                String msg = response != null ? response.getMessage() : "呼叫出库失败";
-                                Toast.makeText(OutboundActivity.this, msg, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(OutboundActivity.this, "呼叫出库失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
@@ -204,20 +217,28 @@ public class OutboundActivity extends Activity {
                     // 生成任务编号
                     String outID = DateUtil.generateTaskNo("H");
                     
-                    // 调用AGV接口创建空托回库任务
-                    AgvResponse response = agvApiService.returnPalletFromSwap(
-                        swapStation, binCode, outID, OutboundActivity.this);
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_RETURN);
+                    params.put("outID", outID);
+                    params.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
+                    if (palletNo != null) {
+                        params.put("palletNo", palletNo);
+                    }
+                    params.put("fromBinCode", swapStation);
+                    params.put("toBinCode", binCode);
+                    params.put("remark", "EMPTY_RETURN_FROM_SWAP");
+                    TaskDispatchResult result = wmsApiService.dispatchTask(params, OutboundActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (response != null && response.isSuccess()) {
+                            if (result != null) {
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 Toast.makeText(OutboundActivity.this, 
-                                    "空托回库成功，任务号：" + outID, 
+                                    "空托回库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
                             } else {
-                                String msg = response != null ? response.getMessage() : "空托回库失败";
-                                Toast.makeText(OutboundActivity.this, msg, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(OutboundActivity.this, "空托回库失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });

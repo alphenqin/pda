@@ -11,11 +11,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
-import com.qs.qs5502demo.api.AgvApiService;
-import com.qs.qs5502demo.model.AgvResponse;
+import com.qs.qs5502demo.api.WmsApiService;
+import com.qs.qs5502demo.model.Task;
+import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.Valve;
 import com.qs.qs5502demo.send.SelectValveActivity;
 import com.qs.qs5502demo.util.DateUtil;
+import com.qs.qs5502demo.util.PreferenceUtil;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class ReturnWarehouseActivity extends Activity {
     
@@ -28,7 +33,7 @@ public class ReturnWarehouseActivity extends Activity {
     private Button btnValveReturn2;
     private Button btnBack;
     
-    private AgvApiService agvApiService;
+    private WmsApiService wmsApiService;
     
     private String palletNo;
     private String binCode;
@@ -42,7 +47,7 @@ public class ReturnWarehouseActivity extends Activity {
         
         setContentView(R.layout.activity_return);
         
-        agvApiService = new AgvApiService();
+        wmsApiService = new WmsApiService(this);
         
         initViews();
         setupListeners();
@@ -136,20 +141,28 @@ public class ReturnWarehouseActivity extends Activity {
                     // 生成任务编号
                     String outID = DateUtil.generateTaskNo("H");
                     
-                    // 调用AGV接口创建呼叫托盘任务
-                    AgvResponse response = agvApiService.callPalletToInspection(
-                        binCode, inspectionStation, outID, ReturnWarehouseActivity.this);
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_RETURN);
+                    params.put("outID", outID);
+                    params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
+                    if (palletNo != null) {
+                        params.put("palletNo", palletNo);
+                    }
+                    params.put("fromBinCode", binCode);
+                    params.put("toBinCode", inspectionStation);
+                    params.put("remark", "EMPTY_PALLET_TO_INSPECTION");
+                    TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (response != null && response.isSuccess()) {
+                            if (result != null) {
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 Toast.makeText(ReturnWarehouseActivity.this, 
-                                    "呼叫托盘成功，任务号：" + outID, 
+                                    "呼叫托盘成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
                             } else {
-                                String msg = response != null ? response.getMessage() : "呼叫托盘失败";
-                                Toast.makeText(ReturnWarehouseActivity.this, msg, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
@@ -201,21 +214,30 @@ public class ReturnWarehouseActivity extends Activity {
                     // 生成任务编号
                     String outID = DateUtil.generateTaskNo("H");
                     
-                    // 调用AGV接口创建阀门回库任务
-                    AgvResponse response = agvApiService.returnValveToWarehouse(
-                        inspectionStation, binCode, matCode, outID, ReturnWarehouseActivity.this);
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_RETURN);
+                    params.put("outID", outID);
+                    params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
+                    params.put("palletNo", palletNo);
+                    params.put("fromBinCode", inspectionStation);
+                    params.put("toBinCode", binCode);
+                    if (matCode != null) {
+                        params.put("matCode", matCode);
+                    }
+                    params.put("remark", "VALVE_RETURN");
+                    TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (response != null && response.isSuccess()) {
+                            if (result != null) {
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 updateStatus(true);
                                 Toast.makeText(ReturnWarehouseActivity.this, 
-                                    "阀门回库成功，任务号：" + outID, 
+                                    "阀门回库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
                             } else {
-                                String msg = response != null ? response.getMessage() : "阀门回库失败";
-                                Toast.makeText(ReturnWarehouseActivity.this, msg, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "阀门回库失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
