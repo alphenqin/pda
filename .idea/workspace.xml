@@ -11,19 +11,7 @@
   <component name="ChangeListManager">
     <list default="true" id="be815ac3-5e21-4212-b744-d65e5849c279" name="Default Changelist" comment="codex 优化">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/MainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/MainActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/api/HttpUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/api/HttpUtil.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/api/WmsApiService.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/api/WmsApiService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/inbound/InboundActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/inbound/InboundActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/model/ApiResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/model/ApiResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/outbound/OutboundActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/outbound/OutboundActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/returnwarehouse/ReturnWarehouseActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/returnwarehouse/ReturnWarehouseActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/send/SendInspectionActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/send/SendInspectionActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/task/TaskManageActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/task/TaskManageActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_inbound.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_inbound.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_task_manage.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_task_manage.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/local.properties" beforeDir="false" afterPath="$PROJECT_DIR$/local.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/项目文档汇总.md" beforeDir="false" afterPath="$PROJECT_DIR$/项目文档汇总.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/api/ApiConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/api/ApiConfig.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
