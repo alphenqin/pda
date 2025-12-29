@@ -29,8 +29,7 @@ public class OutboundActivity extends Activity {
     private View viewStatus;
     private Button btnSelectValve;
     private Button btnCallOutbound;
-    private Button btnEmptyPalletReturn1;
-    private Button btnEmptyPalletReturn2;
+    private Button btnEmptyPalletReturn;
     private Button btnBack;
     
     private WmsApiService wmsApiService;
@@ -40,6 +39,7 @@ public class OutboundActivity extends Activity {
     private String matCode;
     private String swapStation = "WAREHOUSE_SWAP_1"; // 置换区站点
     private Valve selectedValve;
+    private String lastOutboundToBinCode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,8 +59,7 @@ public class OutboundActivity extends Activity {
         viewStatus = findViewById(R.id.viewStatus);
         btnSelectValve = (Button) findViewById(R.id.btnSelectValve);
         btnCallOutbound = (Button) findViewById(R.id.btnCallOutbound);
-        btnEmptyPalletReturn1 = (Button) findViewById(R.id.btnEmptyPalletReturn1);
-        btnEmptyPalletReturn2 = (Button) findViewById(R.id.btnEmptyPalletReturn2);
+        btnEmptyPalletReturn = (Button) findViewById(R.id.btnEmptyPalletReturn);
         btnBack = (Button) findViewById(R.id.btnBack);
         
         updateStatus(false);
@@ -91,17 +90,10 @@ public class OutboundActivity extends Activity {
             }
         });
         
-        btnEmptyPalletReturn1.setOnClickListener(new OnClickListener() {
+        btnEmptyPalletReturn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                callEmptyPalletReturn("1");
-            }
-        });
-        
-        btnEmptyPalletReturn2.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                callEmptyPalletReturn("2");
+                callEmptyPalletReturn();
             }
         });
     }
@@ -160,6 +152,12 @@ public class OutboundActivity extends Activity {
                         public void run() {
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
+                                String resolvedToBinCode = result.getToBinCode();
+                                if (resolvedToBinCode != null && !resolvedToBinCode.isEmpty()) {
+                                    lastOutboundToBinCode = resolvedToBinCode;
+                                } else {
+                                    lastOutboundToBinCode = swapStation;
+                                }
                                 updateStatus(true);
                                 Toast.makeText(OutboundActivity.this, 
                                     "呼叫出库成功，任务号：" + taskNo, 
@@ -185,19 +183,23 @@ public class OutboundActivity extends Activity {
     /**
      * 空托回库
      */
-    private void callEmptyPalletReturn(String palletType) {
+    private void callEmptyPalletReturn() {
         if (binCode == null || binCode.isEmpty()) {
             Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (lastOutboundToBinCode == null || lastOutboundToBinCode.isEmpty()) {
+            Toast.makeText(this, "请先呼叫出库", Toast.LENGTH_SHORT).show();
             return;
         }
         
         new AlertDialog.Builder(this)
             .setTitle("确认空托回库")
-            .setMessage("将" + palletType + "#空托盘送回库位：" + binCode)
+            .setMessage("将空托盘送回库位：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
-                    performEmptyPalletReturn(palletType);
+                    performEmptyPalletReturn();
                 }
             })
             .setNegativeButton("取消", null)
@@ -207,7 +209,7 @@ public class OutboundActivity extends Activity {
     /**
      * 执行空托回库
      */
-    private void performEmptyPalletReturn(String palletType) {
+    private void performEmptyPalletReturn() {
         Toast.makeText(this, "正在创建空托回库任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
@@ -224,7 +226,7 @@ public class OutboundActivity extends Activity {
                     if (palletNo != null) {
                         params.put("palletNo", palletNo);
                     }
-                    params.put("fromBinCode", swapStation);
+                    params.put("fromBinCode", lastOutboundToBinCode);
                     params.put("toBinCode", binCode);
                     params.put("remark", "EMPTY_RETURN_FROM_SWAP");
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, OutboundActivity.this);
@@ -276,6 +278,7 @@ public class OutboundActivity extends Activity {
                 palletNo = selectedValve.getPalletNo();
                 binCode = selectedValve.getBinCode();
                 matCode = selectedValve.getMatCode();
+                lastOutboundToBinCode = null;
                 
                 tvPalletNo.setText(palletNo);
                 tvLocationCode.setText(binCode);

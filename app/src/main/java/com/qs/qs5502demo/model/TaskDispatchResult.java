@@ -16,6 +16,9 @@ public class TaskDispatchResult {
     @SerializedName("status")
     private String status;
 
+    @SerializedName("toBinCode")
+    private String toBinCode;
+
     public String getOutID() {
         return outID;
     }
@@ -38,5 +41,13 @@ public class TaskDispatchResult {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getToBinCode() {
+        return toBinCode;
+    }
+
+    public void setToBinCode(String toBinCode) {
+        this.toBinCode = toBinCode;
     }
 }
