@@ -2,44 +2,12 @@
 .DS_Store
 Thumbs.db
 
-# Environment and secrets
-.env
-.env.*
-!.env.example
-
-# Logs and temp files
-logs/
+# Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-tmp/
-temp/
-.cache/
 
-# Node / frontend
-node_modules/
-dist/
-build/
-coverage/
-.nyc_output/
-.next/
-out/
-
-# Python
-__pycache__/
-.pytest_cache/
-.mypy_cache/
-.venv/
-venv/
-
-# Java / Maven / Gradle
-target/
+# Gradle / build outputs
 .gradle/
-build/
-*.class
+**/build/
 
 # Android / Android Studio
 *.apk
@@ -56,17 +24,8 @@ keystore.properties
 captures/
 lint-results*.xml
 lint-results*.html
-*.log
+lint-results*.sarif
 generated/
-**/build/
-
-# .NET / Visual Studio
-bin/
-obj/
-.vs/
-TestResults/
-*.user
-*.suo
 
 # IDE settings
 .idea/
