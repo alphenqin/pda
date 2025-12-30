@@ -34,8 +34,7 @@ public class SendInspectionActivity extends Activity {
     private View viewStatus;
     private Button btnSelectValve;
     private Button btnCallSend;
-    private Button btnEmptyPalletReturn1;
-    private Button btnEmptyPalletReturn2;
+    private Button btnEmptyPalletReturn;
     private Button btnBack;
     
     private WmsApiService wmsApiService;
@@ -48,8 +47,8 @@ public class SendInspectionActivity extends Activity {
     private Handler handler = new Handler();
     private Runnable inspectionLockRunnable;
     private boolean inspectionLocked = false;
-    private CharSequence emptyReturnLabel1;
-    private CharSequence emptyReturnLabel2;
+    private CharSequence callSendLabel;
+    private CharSequence emptyReturnLabel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,11 +68,10 @@ public class SendInspectionActivity extends Activity {
         viewStatus = findViewById(R.id.viewStatus);
         btnSelectValve = (Button) findViewById(R.id.btnSelectValve);
         btnCallSend = (Button) findViewById(R.id.btnCallSend);
-        btnEmptyPalletReturn1 = (Button) findViewById(R.id.btnEmptyPalletReturn1);
-        btnEmptyPalletReturn2 = (Button) findViewById(R.id.btnEmptyPalletReturn2);
+        btnEmptyPalletReturn = (Button) findViewById(R.id.btnEmptyPalletReturn);
         btnBack = (Button) findViewById(R.id.btnBack);
-        emptyReturnLabel1 = btnEmptyPalletReturn1.getText();
-        emptyReturnLabel2 = btnEmptyPalletReturn2.getText();
+        callSendLabel = btnCallSend.getText();
+        emptyReturnLabel = btnEmptyPalletReturn.getText();
         
         updateStatus(false);
         refreshInspectionLockStatus();
@@ -104,17 +102,10 @@ public class SendInspectionActivity extends Activity {
             }
         });
         
-        btnEmptyPalletReturn1.setOnClickListener(new OnClickListener() {
+        btnEmptyPalletReturn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                callEmptyPalletReturn("1");
-            }
-        });
-        
-        btnEmptyPalletReturn2.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                callEmptyPalletReturn("2");
+                callEmptyPalletReturn();
             }
         });
     }
@@ -224,7 +215,7 @@ public class SendInspectionActivity extends Activity {
     /**
      * 空托回库
      */
-    private void callEmptyPalletReturn(String palletType) {
+    private void callEmptyPalletReturn() {
         if (binCode == null || binCode.isEmpty()) {
             Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
             return;
@@ -232,11 +223,11 @@ public class SendInspectionActivity extends Activity {
         
         new AlertDialog.Builder(this)
             .setTitle("确认空托回库")
-            .setMessage("将" + palletType + "#空托盘送回库位：" + binCode)
+            .setMessage("将空托盘送回库位：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
-                    performEmptyPalletReturn(palletType);
+                    performEmptyPalletReturn();
                 }
             })
             .setNegativeButton("取消", null)
@@ -246,7 +237,7 @@ public class SendInspectionActivity extends Activity {
     /**
      * 执行空托回库
      */
-    private void performEmptyPalletReturn(String palletType) {
+    private void performEmptyPalletReturn() {
         Toast.makeText(this, "正在创建空托回库任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
@@ -263,9 +254,12 @@ public class SendInspectionActivity extends Activity {
                     if (palletNo != null) {
                         params.put("palletNo", palletNo);
                     }
-                    params.put("fromBinCode", inspectionStation);
+                    params.put("fromBinCode", binCode);
                     params.put("toBinCode", binCode);
-                    params.put("remark", "EMPTY_RETURN_FROM_INSPECTION");
+                    params.put("remark", "INSPECTION_EMPTY_RETURN");
+                    if (selectedValve != null && selectedValve.getValveNo() != null) {
+                        params.put("valveNo", selectedValve.getValveNo());
+                    }
                     applyAgvRange(params);
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, SendInspectionActivity.this);
                     
@@ -368,18 +362,18 @@ public class SendInspectionActivity extends Activity {
 
     private void applyInspectionLock(boolean locked) {
         inspectionLocked = locked;
-        btnEmptyPalletReturn1.setEnabled(!inspectionLocked);
-        btnEmptyPalletReturn2.setEnabled(!inspectionLocked);
+        btnCallSend.setEnabled(!inspectionLocked);
+        btnEmptyPalletReturn.setEnabled(!inspectionLocked);
         if (inspectionLocked) {
-            btnEmptyPalletReturn1.setAlpha(0.4f);
-            btnEmptyPalletReturn2.setAlpha(0.4f);
-            btnEmptyPalletReturn1.setText(emptyReturnLabel1 + "（送检锁定）");
-            btnEmptyPalletReturn2.setText(emptyReturnLabel2 + "（送检锁定）");
+            btnCallSend.setAlpha(0.4f);
+            btnEmptyPalletReturn.setAlpha(0.4f);
+            btnCallSend.setText(callSendLabel + "（送检锁定）");
+            btnEmptyPalletReturn.setText(emptyReturnLabel + "（送检锁定）");
         } else {
-            btnEmptyPalletReturn1.setAlpha(1.0f);
-            btnEmptyPalletReturn2.setAlpha(1.0f);
-            btnEmptyPalletReturn1.setText(emptyReturnLabel1);
-            btnEmptyPalletReturn2.setText(emptyReturnLabel2);
+            btnCallSend.setAlpha(1.0f);
+            btnEmptyPalletReturn.setAlpha(1.0f);
+            btnCallSend.setText(callSendLabel);
+            btnEmptyPalletReturn.setText(emptyReturnLabel);
         }
     }
     
