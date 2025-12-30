@@ -14,6 +14,7 @@ public class ServerConfigActivity extends Activity {
     
     private EditText etWmsUrl;
     private EditText etAgvUrl;
+    private EditText etAgvRange;
     private Button btnSave;
     private Button btnReset;
     
@@ -31,6 +32,7 @@ public class ServerConfigActivity extends Activity {
     private void initViews() {
         etWmsUrl = (EditText) findViewById(R.id.etWmsUrl);
         etAgvUrl = (EditText) findViewById(R.id.etAgvUrl);
+        etAgvRange = (EditText) findViewById(R.id.etAgvRange);
         btnSave = (Button) findViewById(R.id.btnSave);
         btnReset = (Button) findViewById(R.id.btnReset);
     }
@@ -45,6 +47,7 @@ public class ServerConfigActivity extends Activity {
         // 从SharedPreferences读取保存的配置
         String savedWmsUrl = com.qs.qs5502demo.util.PreferenceUtil.getWmsBaseUrl(this);
         String savedAgvUrl = com.qs.qs5502demo.util.PreferenceUtil.getAgvBaseUrl(this);
+        String savedAgvRange = com.qs.qs5502demo.util.PreferenceUtil.getAgvRange(this);
         
         // 如果有保存的配置，显示保存的值；否则显示默认值
         if (savedWmsUrl != null && !savedWmsUrl.isEmpty()) {
@@ -57,6 +60,10 @@ public class ServerConfigActivity extends Activity {
             etAgvUrl.setText(savedAgvUrl);
         } else {
             etAgvUrl.setText(ApiConfig.getDefaultAgvBaseUrl());
+        }
+
+        if (savedAgvRange != null && !savedAgvRange.isEmpty()) {
+            etAgvRange.setText(savedAgvRange);
         }
 
     }
@@ -83,6 +90,7 @@ public class ServerConfigActivity extends Activity {
     private void saveConfig() {
         String wmsUrl = etWmsUrl.getText().toString().trim();
         String agvUrl = etAgvUrl.getText().toString().trim();
+        String agvRange = etAgvRange.getText().toString().trim();
         
         // 验证URL格式
         if (wmsUrl.isEmpty()) {
@@ -109,6 +117,7 @@ public class ServerConfigActivity extends Activity {
         // 保存配置
         ApiConfig.setWmsBaseUrl(this, wmsUrl);
         ApiConfig.setAgvBaseUrl(this, agvUrl);
+        com.qs.qs5502demo.util.PreferenceUtil.saveAgvRange(this, agvRange);
         Toast.makeText(this, "配置保存成功", Toast.LENGTH_SHORT).show();
         
         // 延迟关闭，让用户看到成功提示
@@ -126,6 +135,7 @@ public class ServerConfigActivity extends Activity {
     private void resetToDefault() {
         etWmsUrl.setText(ApiConfig.getDefaultWmsBaseUrl());
         etAgvUrl.setText(ApiConfig.getDefaultAgvBaseUrl());
+        etAgvRange.setText("");
         Toast.makeText(this, "已重置为默认值", Toast.LENGTH_SHORT).show();
     }
 }

@@ -145,6 +145,7 @@ public class OutboundActivity extends Activity {
                     if (matCode != null) {
                         params.put("matCode", matCode);
                     }
+                    applyAgvRange(params);
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, OutboundActivity.this);
                     
                     runOnUiThread(new Runnable() {
@@ -229,6 +230,7 @@ public class OutboundActivity extends Activity {
                     params.put("fromBinCode", lastOutboundToBinCode);
                     params.put("toBinCode", binCode);
                     params.put("remark", "EMPTY_RETURN_FROM_SWAP");
+                    applyAgvRange(params);
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, OutboundActivity.this);
                     
                     runOnUiThread(new Runnable() {
@@ -265,6 +267,13 @@ public class OutboundActivity extends Activity {
             viewStatus.setBackgroundColor(0xFF4CAF50);
         } else {
             viewStatus.setBackgroundColor(0xFFCCCCCC);
+        }
+    }
+
+    private void applyAgvRange(Map<String, String> params) {
+        String agvRange = PreferenceUtil.getAgvRange(this);
+        if (agvRange != null && !agvRange.isEmpty()) {
+            params.put("agvRange", agvRange);
         }
     }
     

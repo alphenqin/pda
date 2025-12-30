@@ -66,6 +66,26 @@
             android:inputType="textUri"
             android:layout_marginBottom="24dp" />
 
+        <!-- AGV范围 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AGV范围"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etAgvRange"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="请输入AGV范围（可选）"
+            android:padding="12dp"
+            android:background="#F5F5F5"
+            android:textSize="14sp"
+            android:inputType="text"
+            android:layout_marginBottom="24dp" />
+
         <!-- 说明文字 -->
         <TextView
             android:layout_width="match_parent"

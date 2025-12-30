@@ -10,11 +10,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="be815ac3-5e21-4212-b744-d65e5849c279" name="Default Changelist" comment="codex 优化">
-      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/local.properties" beforeDir="false" afterPath="$PROJECT_DIR$/local.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/build/intermediates/javac/debug/classes/com/qs/pda5502demo/BuildConfig.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/build/intermediates/javac/debug/classes/com/qs/qs5502demo/MainActivity$1.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/build/intermediates/javac/debug/classes/com/qs/qs5502demo/MainActivity.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/ServerConfigActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/ServerConfigActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/inbound/InboundActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/inbound/InboundActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/outbound/OutboundActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/outbound/OutboundActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/returnwarehouse/ReturnWarehouseActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/returnwarehouse/ReturnWarehouseActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/send/SendInspectionActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/send/SendInspectionActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/util/PreferenceUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/qs/qs5502demo/util/PreferenceUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/res/layout/activity_server_config.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/layout/activity_server_config.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,7 +33,7 @@
     <option name="testRunner" value="GRADLE" />
     <option name="delegatedBuild" value="true" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[DeviceId(pluginId=LocalEmulator, isTemplate=false, identifier=path=D:\Android\.android\avd\Pixel_4.avd)]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
       <ProjectState />

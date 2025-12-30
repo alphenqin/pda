@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -13,6 +14,7 @@ import android.widget.Toast;
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.model.AvailablePallet;
+import com.qs.qs5502demo.model.InboundLockStatus;
 import com.qs.qs5502demo.model.Pallet;
 import com.qs.qs5502demo.model.PalletTypeOption;
 import com.qs.qs5502demo.model.Task;
@@ -29,6 +31,7 @@ import java.util.Map;
 public class InboundActivity extends Activity {
 
     private static final String DEFAULT_SWAP_STATION = "WAREHOUSE_SWAP_1";
+    private static final long INBOUND_LOCK_POLL_MS = 5000L;
 
     private TextView tvPalletNo;
     private TextView tvLocationCode;
@@ -54,6 +57,10 @@ public class InboundActivity extends Activity {
     private boolean isPalletScanEnabled = true;
     private final List<PalletTypeOption> palletTypeList = new ArrayList<>();
     private PalletTypeOption selectedPalletType;
+    private Handler handler = new Handler();
+    private Runnable inboundLockRunnable;
+    private boolean inboundLocked = false;
+    private CharSequence callInboundLabel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,12 +87,14 @@ public class InboundActivity extends Activity {
         btnCallInbound = (Button) findViewById(R.id.btnCallInbound);
         btnBack = (Button) findViewById(R.id.btnBack);
         tvPalletType = (TextView) findViewById(R.id.tvPalletType);
+        callInboundLabel = btnCallInbound.getText();
         
         isPalletScanEnabled = PreferenceUtil.getWmsPalletScanEnabled(this);
         togglePalletEntryMode(isPalletScanEnabled);
 
         // 初始状态
         updateStatus(false);
+        refreshInboundLockStatus();
     }
     
     private void setupListeners() {
@@ -217,8 +226,43 @@ public class InboundActivity extends Activity {
             Toast.makeText(this, "请先完成阀门绑定", Toast.LENGTH_SHORT).show();
             return;
         }
-        
-        // 显示确认对话框
+
+        checkInboundLockAndConfirm();
+    }
+
+    private void checkInboundLockAndConfirm() {
+        Toast.makeText(this, "正在检查入库状态...", Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    InboundLockStatus status = wmsApiService.getInboundLockStatus(InboundActivity.this);
+                    boolean locked = status != null && status.isLocked();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            applyInboundLock(locked);
+                            if (locked) {
+                                Toast.makeText(InboundActivity.this, "入库任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            showInboundConfirmDialog();
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(InboundActivity.this, "入库状态检查失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
+
+    private void showInboundConfirmDialog() {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫入库")
             .setMessage("托盘号：" + palletNo + "\n库位号：" + binCode)
@@ -424,6 +468,7 @@ public class InboundActivity extends Activity {
                     if (matCode != null) {
                         params.put("matCode", matCode);
                     }
+                    applyAgvRange(params);
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, InboundActivity.this);
                     
                     // 更新UI
@@ -464,6 +509,13 @@ public class InboundActivity extends Activity {
             viewStatus.setBackgroundColor(0xFFCCCCCC);  // 灰色
         }
     }
+
+    private void applyAgvRange(Map<String, String> params) {
+        String agvRange = PreferenceUtil.getAgvRange(this);
+        if (agvRange != null && !agvRange.isEmpty()) {
+            params.put("agvRange", agvRange);
+        }
+    }
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -478,6 +530,76 @@ public class InboundActivity extends Activity {
             Toast.makeText(this, "阀门绑定成功", Toast.LENGTH_SHORT).show();
         }
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        startInboundLockPolling();
+        boolean enabled = PreferenceUtil.getWmsPalletScanEnabled(this);
+        if (enabled != isPalletScanEnabled) {
+            isPalletScanEnabled = enabled;
+            togglePalletEntryMode(isPalletScanEnabled);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopInboundLockPolling();
+    }
+
+    private void startInboundLockPolling() {
+        if (inboundLockRunnable != null) {
+            return;
+        }
+        inboundLockRunnable = new Runnable() {
+            @Override
+            public void run() {
+                refreshInboundLockStatus();
+                handler.postDelayed(this, INBOUND_LOCK_POLL_MS);
+            }
+        };
+        handler.post(inboundLockRunnable);
+    }
+
+    private void stopInboundLockPolling() {
+        if (inboundLockRunnable != null) {
+            handler.removeCallbacks(inboundLockRunnable);
+            inboundLockRunnable = null;
+        }
+    }
+
+    private void refreshInboundLockStatus() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    InboundLockStatus status = wmsApiService.getInboundLockStatus(InboundActivity.this);
+                    boolean locked = status != null && status.isLocked();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            applyInboundLock(locked);
+                        }
+                    });
+                } catch (Exception e) {
+                    // Keep current state on error.
+                }
+            }
+        }).start();
+    }
+
+    private void applyInboundLock(boolean locked) {
+        inboundLocked = locked;
+        btnCallInbound.setEnabled(!inboundLocked);
+        if (inboundLocked) {
+            btnCallInbound.setAlpha(0.4f);
+            btnCallInbound.setText(callInboundLabel + "（入库锁定）");
+        } else {
+            btnCallInbound.setAlpha(1.0f);
+            btnCallInbound.setText(callInboundLabel);
+        }
+    }
     
     @Override
     protected void onDestroy() {
@@ -487,14 +609,5 @@ public class InboundActivity extends Activity {
         super.onDestroy();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        boolean enabled = PreferenceUtil.getWmsPalletScanEnabled(this);
-        if (enabled != isPalletScanEnabled) {
-            isPalletScanEnabled = enabled;
-            togglePalletEntryMode(isPalletScanEnabled);
-        }
-    }
 }
 

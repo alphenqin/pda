@@ -152,6 +152,7 @@ public class SendInspectionActivity extends Activity {
                     if (matCode != null) {
                         params.put("matCode", matCode);
                     }
+                    applyAgvRange(params);
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, SendInspectionActivity.this);
                     
                     runOnUiThread(new Runnable() {
@@ -226,6 +227,7 @@ public class SendInspectionActivity extends Activity {
                     params.put("fromBinCode", inspectionStation);
                     params.put("toBinCode", binCode);
                     params.put("remark", "EMPTY_RETURN_FROM_INSPECTION");
+                    applyAgvRange(params);
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, SendInspectionActivity.this);
                     
                     runOnUiThread(new Runnable() {
@@ -262,6 +264,13 @@ public class SendInspectionActivity extends Activity {
             viewStatus.setBackgroundColor(0xFF4CAF50);
         } else {
             viewStatus.setBackgroundColor(0xFFCCCCCC);
+        }
+    }
+
+    private void applyAgvRange(Map<String, String> params) {
+        String agvRange = PreferenceUtil.getAgvRange(this);
+        if (agvRange != null && !agvRange.isEmpty()) {
+            params.put("agvRange", agvRange);
         }
     }
     

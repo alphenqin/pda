@@ -151,6 +151,7 @@ public class ReturnWarehouseActivity extends Activity {
                     params.put("fromBinCode", binCode);
                     params.put("toBinCode", inspectionStation);
                     params.put("remark", "EMPTY_PALLET_TO_INSPECTION");
+                    applyAgvRange(params);
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
                     
                     runOnUiThread(new Runnable() {
@@ -225,6 +226,7 @@ public class ReturnWarehouseActivity extends Activity {
                         params.put("matCode", matCode);
                     }
                     params.put("remark", "VALVE_RETURN");
+                    applyAgvRange(params);
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
                     
                     runOnUiThread(new Runnable() {
@@ -262,6 +264,13 @@ public class ReturnWarehouseActivity extends Activity {
             viewStatus.setBackgroundColor(0xFF4CAF50);
         } else {
             viewStatus.setBackgroundColor(0xFFCCCCCC);
+        }
+    }
+
+    private void applyAgvRange(Map<String, String> params) {
+        String agvRange = PreferenceUtil.getAgvRange(this);
+        if (agvRange != null && !agvRange.isEmpty()) {
+            params.put("agvRange", agvRange);
         }
     }
     
