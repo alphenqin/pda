@@ -236,14 +236,20 @@ public class InboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    InboundLockStatus status = wmsApiService.getInboundLockStatus(InboundActivity.this);
-                    boolean locked = status != null && status.isLocked();
+                    InboundLockStatus inboundStatus = wmsApiService.getInboundLockStatus(InboundActivity.this);
+                    InboundLockStatus inspectionStatus = wmsApiService.getInspectionLockStatus(InboundActivity.this);
+                    boolean locked = inboundStatus != null && inboundStatus.isLocked();
+                    boolean inspectionLocked = inspectionStatus != null && inspectionStatus.isLocked();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             applyInboundLock(locked);
                             if (locked) {
                                 Toast.makeText(InboundActivity.this, "入库任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            if (inspectionLocked) {
+                                Toast.makeText(InboundActivity.this, "送检任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             showInboundConfirmDialog();

@@ -277,6 +277,23 @@ public class WmsApiService {
     }
 
     /**
+     * 查询送检锁定状态（全局）
+     */
+    public InboundLockStatus getInspectionLockStatus(Context context) throws IOException {
+        String url = getBaseUrl() + "/task/inspection/lock";
+        String response = HttpUtil.post(url, "{}", context);
+
+        Type type = new TypeToken<ApiResponse<InboundLockStatus>>(){}.getType();
+        ApiResponse<InboundLockStatus> apiResponse = HttpUtil.fromJson(response, type);
+
+        if (apiResponse.isSuccess() && apiResponse.getData() != null) {
+            return apiResponse.getData();
+        } else {
+            throw new IOException(apiResponse.getMessage());
+        }
+    }
+
+    /**
      * 查询AGV信息（PDA → WMS → AGV）
      */
     public List<AgvInfo> queryAgvInfo(Context context) throws IOException {

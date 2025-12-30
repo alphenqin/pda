@@ -31,9 +31,11 @@ public class MainActivity extends Activity {
 	private TextView tvDateTime;
 	private TextView tvUserInfo;
 	private Button btnLogout;
+	private Button btnInbound;
 	private Button btnSendInspection;
 	private Button btnReturn;
 	private Button btnOutbound;
+	private CharSequence inboundLabel;
 	private CharSequence sendInspectionLabel;
 	private CharSequence returnLabel;
 	private CharSequence outboundLabel;
@@ -42,6 +44,7 @@ public class MainActivity extends Activity {
 	private Runnable inboundLockRunnable;
 	private WmsApiService wmsApiService;
 	private boolean inboundLocked = false;
+	private boolean inspectionLocked = false;
 	private static final long INBOUND_LOCK_POLL_MS = 5000;
 
 	@Override
@@ -62,9 +65,11 @@ public class MainActivity extends Activity {
 		tvDateTime = (TextView) findViewById(R.id.tvDateTime);
 		tvUserInfo = (TextView) findViewById(R.id.tvUserInfo);
 		btnLogout = (Button) findViewById(R.id.btnLogout);
+		btnInbound = (Button) findViewById(R.id.btnInbound);
 		btnSendInspection = (Button) findViewById(R.id.btnSendInspection);
 		btnReturn = (Button) findViewById(R.id.btnReturn);
 		btnOutbound = (Button) findViewById(R.id.btnOutbound);
+		inboundLabel = btnInbound.getText();
 		sendInspectionLabel = btnSendInspection.getText();
 		returnLabel = btnReturn.getText();
 		outboundLabel = btnOutbound.getText();
@@ -85,10 +90,10 @@ public class MainActivity extends Activity {
 		});
 		
 		// 初始化按钮点击事件
-		findViewById(R.id.btnInbound).setOnClickListener(new OnClickListener() {
+		btnInbound.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				startActivity(new Intent(MainActivity.this, InboundActivity.class));
+				navigateIfUnlocked(InboundActivity.class);
 			}
 		});
 		
@@ -142,8 +147,17 @@ public class MainActivity extends Activity {
 	}
 
 	private void navigateIfUnlocked(Class<?> targetActivity) {
-		if (inboundLocked) {
+		if (targetActivity == InboundActivity.class && inspectionLocked) {
+			Toast.makeText(MainActivity.this, "送检任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		if (targetActivity != InboundActivity.class && inboundLocked) {
 			Toast.makeText(MainActivity.this, "入库任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		if ((targetActivity == ReturnWarehouseActivity.class || targetActivity == OutboundActivity.class)
+			&& inspectionLocked) {
+			Toast.makeText(MainActivity.this, "送检任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
 			return;
 		}
 		startActivity(new Intent(MainActivity.this, targetActivity));
@@ -165,13 +179,14 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 				try {
-					InboundLockStatus status = wmsApiService.getInboundLockStatus(MainActivity.this);
-					boolean locked = status != null && status.isLocked();
-					long count = status != null ? status.getCount() : 0;
+					InboundLockStatus inboundStatus = wmsApiService.getInboundLockStatus(MainActivity.this);
+					InboundLockStatus inspectionStatus = wmsApiService.getInspectionLockStatus(MainActivity.this);
+					boolean inbound = inboundStatus != null && inboundStatus.isLocked();
+					boolean inspection = inspectionStatus != null && inspectionStatus.isLocked();
 					runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							applyInboundLock(locked, count);
+							applyLocks(inbound, inspection);
 						}
 					});
 				} catch (Exception e) {
@@ -181,28 +196,46 @@ public class MainActivity extends Activity {
 		}).start();
 	}
 
-	private void applyInboundLock(boolean locked, long count) {
-		if (locked != inboundLocked) {
-			inboundLocked = locked;
-			String message = locked
-				? "入库任务执行中，送检/回库/出库已锁定"
-				: "入库任务已完成，送检/回库/出库已解锁";
+	private void applyLocks(boolean inbound, boolean inspection) {
+		boolean stateChanged = inboundLocked != inbound || inspectionLocked != inspection;
+		inboundLocked = inbound;
+		inspectionLocked = inspection;
+		if (stateChanged) {
+			String message;
+			if (inboundLocked && inspectionLocked) {
+				message = "入库/送检任务执行中，入库/回库/出库已锁定";
+			} else if (inboundLocked) {
+				message = "入库任务执行中，送检/回库/出库已锁定";
+			} else if (inspectionLocked) {
+				message = "送检任务执行中，入库/回库/出库已锁定";
+			} else {
+				message = "任务已完成，按钮已解锁";
+			}
 			Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
 		}
-		boolean enabled = !inboundLocked;
-		updateLockedButton(btnSendInspection, sendInspectionLabel, enabled);
-		updateLockedButton(btnReturn, returnLabel, enabled);
-		updateLockedButton(btnOutbound, outboundLabel, enabled);
+
+		updateLockedButton(btnInbound, inboundLabel, !inspectionLocked, inspectionLocked ? "送检锁定" : null);
+		updateLockedButton(btnSendInspection, sendInspectionLabel, !inboundLocked, inboundLocked ? "入库锁定" : null);
+		boolean returnEnabled = !inboundLocked && !inspectionLocked;
+		String returnReason = inboundLocked ? "入库锁定" : (inspectionLocked ? "送检锁定" : null);
+		updateLockedButton(btnReturn, returnLabel, returnEnabled, returnReason);
+		boolean outboundEnabled = !inboundLocked && !inspectionLocked;
+		String outboundReason = inboundLocked ? "入库锁定" : (inspectionLocked ? "送检锁定" : null);
+		updateLockedButton(btnOutbound, outboundLabel, outboundEnabled, outboundReason);
 	}
 
-	private void updateLockedButton(Button button, CharSequence label, boolean enabled) {
+	private void updateLockedButton(Button button, CharSequence label, boolean enabled, String reason) {
 		button.setEnabled(enabled);
 		if (enabled) {
 			button.setAlpha(1.0f);
 			button.setText(label);
 		} else {
 			button.setAlpha(0.4f);
-			button.setText(label + "（入库锁定）");
+			if (reason != null) {
+				button.setText(label + "（" + reason + "）");
+			} else {
+				button.setText(label + "（锁定）");
+			}
 		}
 	}
 	

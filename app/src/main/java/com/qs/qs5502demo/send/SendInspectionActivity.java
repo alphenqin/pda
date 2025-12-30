@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -12,6 +13,7 @@ import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
+import com.qs.qs5502demo.model.InboundLockStatus;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.Valve;
@@ -22,6 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SendInspectionActivity extends Activity {
+
+    private static final long INSPECTION_LOCK_POLL_MS = 5000L;
+    private static final String INSPECTION_AREA_WAITING = "WAITING";
+    private static final String INSPECTION_AREA_FLOW = "FLOW_DEVICE";
     
     private TextView tvPalletNo;
     private TextView tvLocationCode;
@@ -39,6 +45,11 @@ public class SendInspectionActivity extends Activity {
     private String matCode;
     private String inspectionStation = "INSPECTION_STATION_1"; // 检测区站点，可根据实际情况配置
     private Valve selectedValve;
+    private Handler handler = new Handler();
+    private Runnable inspectionLockRunnable;
+    private boolean inspectionLocked = false;
+    private CharSequence emptyReturnLabel1;
+    private CharSequence emptyReturnLabel2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,8 +72,11 @@ public class SendInspectionActivity extends Activity {
         btnEmptyPalletReturn1 = (Button) findViewById(R.id.btnEmptyPalletReturn1);
         btnEmptyPalletReturn2 = (Button) findViewById(R.id.btnEmptyPalletReturn2);
         btnBack = (Button) findViewById(R.id.btnBack);
+        emptyReturnLabel1 = btnEmptyPalletReturn1.getText();
+        emptyReturnLabel2 = btnEmptyPalletReturn2.getText();
         
         updateStatus(false);
+        refreshInspectionLockStatus();
     }
     
     private void setupListeners() {
@@ -113,16 +127,37 @@ public class SendInspectionActivity extends Activity {
             Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
+        showInspectionAreaDialog();
+    }
+
+    private void showInspectionAreaDialog() {
+        final String[] items = new String[] { "待检区", "直排流量装置区" };
+        new AlertDialog.Builder(this)
+            .setTitle("选择目标站点")
+            .setItems(items, new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface dialog, int which) {
+                    String area = which == 0 ? INSPECTION_AREA_WAITING : INSPECTION_AREA_FLOW;
+                    String label = items[which];
+                    showSendInspectionConfirm(area, label);
+                }
+            })
+            .setNegativeButton("取消", null)
+            .show();
+    }
+
+    private void showSendInspectionConfirm(String area, String areaLabel) {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫送检")
-            .setMessage("阀门编号：" + selectedValve.getValveNo() + 
-                       "\n托盘号：" + palletNo + 
-                       "\n库位号：" + binCode)
+            .setMessage("阀门编号：" + selectedValve.getValveNo() +
+                       "\n托盘号：" + palletNo +
+                       "\n库位号：" + binCode +
+                       "\n目标区域：" + areaLabel)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
-                    performCallSendInspection();
+                    performCallSendInspection(area);
                 }
             })
             .setNegativeButton("取消", null)
@@ -132,7 +167,7 @@ public class SendInspectionActivity extends Activity {
     /**
      * 执行呼叫送检
      */
-    private void performCallSendInspection() {
+    private void performCallSendInspection(String area) {
         Toast.makeText(this, "正在创建送检任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
@@ -148,7 +183,11 @@ public class SendInspectionActivity extends Activity {
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(SendInspectionActivity.this));
                     params.put("palletNo", palletNo);
                     params.put("fromBinCode", binCode);
-                    params.put("toBinCode", inspectionStation);
+                    params.put("toBinCode", area);
+                    params.put("inspectionArea", area);
+                    if (selectedValve != null && selectedValve.getValveNo() != null) {
+                        params.put("valveNo", selectedValve.getValveNo());
+                    }
                     if (matCode != null) {
                         params.put("matCode", matCode);
                     }
@@ -271,6 +310,76 @@ public class SendInspectionActivity extends Activity {
         String agvRange = PreferenceUtil.getAgvRange(this);
         if (agvRange != null && !agvRange.isEmpty()) {
             params.put("agvRange", agvRange);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        startInspectionLockPolling();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopInspectionLockPolling();
+    }
+
+    private void startInspectionLockPolling() {
+        if (inspectionLockRunnable != null) {
+            return;
+        }
+        inspectionLockRunnable = new Runnable() {
+            @Override
+            public void run() {
+                refreshInspectionLockStatus();
+                handler.postDelayed(this, INSPECTION_LOCK_POLL_MS);
+            }
+        };
+        handler.post(inspectionLockRunnable);
+    }
+
+    private void stopInspectionLockPolling() {
+        if (inspectionLockRunnable != null) {
+            handler.removeCallbacks(inspectionLockRunnable);
+            inspectionLockRunnable = null;
+        }
+    }
+
+    private void refreshInspectionLockStatus() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    InboundLockStatus status = wmsApiService.getInspectionLockStatus(SendInspectionActivity.this);
+                    boolean locked = status != null && status.isLocked();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            applyInspectionLock(locked);
+                        }
+                    });
+                } catch (Exception e) {
+                    // Keep current state on error.
+                }
+            }
+        }).start();
+    }
+
+    private void applyInspectionLock(boolean locked) {
+        inspectionLocked = locked;
+        btnEmptyPalletReturn1.setEnabled(!inspectionLocked);
+        btnEmptyPalletReturn2.setEnabled(!inspectionLocked);
+        if (inspectionLocked) {
+            btnEmptyPalletReturn1.setAlpha(0.4f);
+            btnEmptyPalletReturn2.setAlpha(0.4f);
+            btnEmptyPalletReturn1.setText(emptyReturnLabel1 + "（送检锁定）");
+            btnEmptyPalletReturn2.setText(emptyReturnLabel2 + "（送检锁定）");
+        } else {
+            btnEmptyPalletReturn1.setAlpha(1.0f);
+            btnEmptyPalletReturn2.setAlpha(1.0f);
+            btnEmptyPalletReturn1.setText(emptyReturnLabel1);
+            btnEmptyPalletReturn2.setText(emptyReturnLabel2);
         }
     }
     
