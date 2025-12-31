@@ -49,6 +49,8 @@ public class SendInspectionActivity extends Activity {
     private boolean inspectionLocked = false;
     private CharSequence callSendLabel;
     private CharSequence emptyReturnLabel;
+    private boolean callSendInProgress = false;
+    private boolean emptyReturnInProgress = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -159,6 +161,14 @@ public class SendInspectionActivity extends Activity {
      * 执行呼叫送检
      */
     private void performCallSendInspection(String area) {
+        if (callSendInProgress) {
+            Toast.makeText(this, "送检任务下发中，请稍后再试", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        callSendInProgress = true;
+        btnCallSend.setEnabled(false);
+        btnCallSend.setAlpha(0.4f);
+        btnCallSend.setText(callSendLabel + "（处理中）");
         Toast.makeText(this, "正在创建送检任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
@@ -188,6 +198,7 @@ public class SendInspectionActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            callSendInProgress = false;
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 updateStatus(true);
@@ -197,6 +208,7 @@ public class SendInspectionActivity extends Activity {
                             } else {
                                 Toast.makeText(SendInspectionActivity.this, "呼叫送检失败", Toast.LENGTH_SHORT).show();
                             }
+                            applyInspectionLock(inspectionLocked);
                         }
                     });
                 } catch (Exception e) {
@@ -204,7 +216,9 @@ public class SendInspectionActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            callSendInProgress = false;
                             Toast.makeText(SendInspectionActivity.this, "呼叫送检失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            applyInspectionLock(inspectionLocked);
                         }
                     });
                 }
@@ -238,6 +252,14 @@ public class SendInspectionActivity extends Activity {
      * 执行空托回库
      */
     private void performEmptyPalletReturn() {
+        if (emptyReturnInProgress) {
+            Toast.makeText(this, "空托回库下发中，请稍后再试", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        emptyReturnInProgress = true;
+        btnEmptyPalletReturn.setEnabled(false);
+        btnEmptyPalletReturn.setAlpha(0.4f);
+        btnEmptyPalletReturn.setText(emptyReturnLabel + "（处理中）");
         Toast.makeText(this, "正在创建空托回库任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
@@ -266,6 +288,7 @@ public class SendInspectionActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            emptyReturnInProgress = false;
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 Toast.makeText(SendInspectionActivity.this, 
@@ -274,6 +297,7 @@ public class SendInspectionActivity extends Activity {
                             } else {
                                 Toast.makeText(SendInspectionActivity.this, "空托回库失败", Toast.LENGTH_SHORT).show();
                             }
+                            applyInspectionLock(inspectionLocked);
                         }
                     });
                 } catch (Exception e) {
@@ -281,7 +305,9 @@ public class SendInspectionActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            emptyReturnInProgress = false;
                             Toast.makeText(SendInspectionActivity.this, "空托回库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            applyInspectionLock(inspectionLocked);
                         }
                     });
                 }
@@ -362,18 +388,24 @@ public class SendInspectionActivity extends Activity {
 
     private void applyInspectionLock(boolean locked) {
         inspectionLocked = locked;
-        btnCallSend.setEnabled(!inspectionLocked);
-        btnEmptyPalletReturn.setEnabled(!inspectionLocked);
-        if (inspectionLocked) {
-            btnCallSend.setAlpha(0.4f);
-            btnEmptyPalletReturn.setAlpha(0.4f);
-            btnCallSend.setText(callSendLabel + "（送检锁定）");
-            btnEmptyPalletReturn.setText(emptyReturnLabel + "（送检锁定）");
-        } else {
+        boolean callSendEnabled = !inspectionLocked && !callSendInProgress;
+        btnCallSend.setEnabled(callSendEnabled);
+        if (callSendEnabled) {
             btnCallSend.setAlpha(1.0f);
-            btnEmptyPalletReturn.setAlpha(1.0f);
             btnCallSend.setText(callSendLabel);
+        } else {
+            btnCallSend.setAlpha(0.4f);
+            btnCallSend.setText(callSendLabel + (inspectionLocked ? "（送检锁定）" : "（处理中）"));
+        }
+
+        boolean emptyReturnEnabled = !inspectionLocked && !emptyReturnInProgress;
+        btnEmptyPalletReturn.setEnabled(emptyReturnEnabled);
+        if (emptyReturnEnabled) {
+            btnEmptyPalletReturn.setAlpha(1.0f);
             btnEmptyPalletReturn.setText(emptyReturnLabel);
+        } else {
+            btnEmptyPalletReturn.setAlpha(0.4f);
+            btnEmptyPalletReturn.setText(emptyReturnLabel + (inspectionLocked ? "（送检锁定）" : "（处理中）"));
         }
     }
     

@@ -155,36 +155,15 @@
             android:textColor="#FFFFFF" />
 
         <!-- 阀门回库按钮 -->
-        <LinearLayout
+        <Button
+            android:id="@+id/btnValveReturn"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2">
-
-            <Button
-                android:id="@+id/btnValveReturn1"
-                android:layout_width="0dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="3. 1# 阀门 回库"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:background="#4CAF50"
-                android:textColor="#FFFFFF" />
-
-            <Button
-                android:id="@+id/btnValveReturn2"
-                android:layout_width="0dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="3. 2# 阀门 回库"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:background="#4CAF50"
-                android:textColor="#FFFFFF" />
-        </LinearLayout>
+            android:layout_height="100dp"
+            android:text="3. 阀门回库"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:background="#4CAF50"
+            android:textColor="#FFFFFF" />
     </LinearLayout>
 
 </LinearLayout>

@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
+import com.qs.qs5502demo.model.PageResponse;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.Valve;
@@ -29,17 +30,26 @@ public class ReturnWarehouseActivity extends Activity {
     private View viewStatus;
     private Button btnSelectValve;
     private Button btnCallPallet;
-    private Button btnValveReturn1;
-    private Button btnValveReturn2;
+    private Button btnValveReturn;
     private Button btnBack;
+    private CharSequence callPalletLabel;
+    private CharSequence valveReturnLabel;
     
     private WmsApiService wmsApiService;
     
     private String palletNo;
     private String binCode;
     private String matCode;
-    private String inspectionStation = "INSPECTION_STATION_1"; // 检测区站点
+    private String inspectionTargetBin;
     private Valve selectedValve;
+    private static final long CALL_PALLET_POLL_INTERVAL_MS = 5000L;
+    private static final long CALL_PALLET_TIMEOUT_MS = 40L * 60L * 1000L;
+    private static final String PALLET_TYPE_SMALL = "t1";
+    private static final String PALLET_TYPE_LARGE = "t2";
+    private static final String SMALL_BUFFER_BIN = "B3-15-01";
+    private static final String LARGE_BUFFER_BIN = "B3-14-01";
+    private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
+    private static final String LARGE_DOCK_BIN = "D2-大托盘接驳点";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,11 +69,13 @@ public class ReturnWarehouseActivity extends Activity {
         viewStatus = findViewById(R.id.viewStatus);
         btnSelectValve = (Button) findViewById(R.id.btnSelectValve);
         btnCallPallet = (Button) findViewById(R.id.btnCallPallet);
-        btnValveReturn1 = (Button) findViewById(R.id.btnValveReturn1);
-        btnValveReturn2 = (Button) findViewById(R.id.btnValveReturn2);
+        btnValveReturn = (Button) findViewById(R.id.btnValveReturn);
         btnBack = (Button) findViewById(R.id.btnBack);
+        callPalletLabel = btnCallPallet.getText();
+        valveReturnLabel = btnValveReturn.getText();
         
         updateStatus(false);
+        updateButtonLocks();
     }
     
     private void setupListeners() {
@@ -91,17 +103,10 @@ public class ReturnWarehouseActivity extends Activity {
             }
         });
         
-        btnValveReturn1.setOnClickListener(new OnClickListener() {
+        btnValveReturn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                callValveReturn("1");
-            }
-        });
-        
-        btnValveReturn2.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                callValveReturn("2");
+                callValveReturn();
             }
         });
     }
@@ -110,14 +115,34 @@ public class ReturnWarehouseActivity extends Activity {
      * 呼叫托盘
      */
     private void callPallet() {
+        if (PreferenceUtil.getReturnCallPalletLock(this)) {
+            Toast.makeText(this, "呼叫托盘进行中，请稍后再试", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (PreferenceUtil.getReturnValveLock(this)) {
+            Toast.makeText(this, "阀门回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (selectedValve == null || palletNo == null || palletNo.isEmpty()) {
             Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (inspectionTargetBin == null || inspectionTargetBin.isEmpty()) {
+            Toast.makeText(this, "送检目标站点未设置，请先完成送检", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String palletType = resolvePalletTypeCode(palletNo);
+        if (palletType == null) {
+            Toast.makeText(this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String bufferBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_BUFFER_BIN : SMALL_BUFFER_BIN;
         
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫托盘")
-            .setMessage("将空托盘从库位 " + binCode + " 运送到检测区站点")
+            .setMessage("将空托盘从库位 " + binCode + " 运送到中转位 " + bufferBin +
+                "\n完成后送往目标站点：" + inspectionTargetBin)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -138,35 +163,101 @@ public class ReturnWarehouseActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    // 生成任务编号
-                    String outID = DateUtil.generateTaskNo("H");
-                    
-                    Map<String, String> params = new HashMap<>();
-                    params.put("taskType", Task.TYPE_RETURN);
-                    params.put("outID", outID);
-                    params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    if (palletNo != null) {
-                        params.put("palletNo", palletNo);
+                    String palletType = resolvePalletTypeCode(palletNo);
+                    if (palletType == null) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ReturnWarehouseActivity.this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        return;
                     }
-                    params.put("fromBinCode", binCode);
-                    params.put("toBinCode", inspectionStation);
-                    params.put("remark", "EMPTY_PALLET_TO_INSPECTION");
-                    applyAgvRange(params);
-                    TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
+                    setReturnCallLock(true);
+                    String bufferBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_BUFFER_BIN : SMALL_BUFFER_BIN;
+                    String dockBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_DOCK_BIN : SMALL_DOCK_BIN;
+
+                    // 阶段1：库位 -> 中转位
+                    String baseOutId = DateUtil.generateTaskNo("H");
+                    String outIdStage1 = baseOutId + "-1";
+                    Map<String, String> stage1 = new HashMap<>();
+                    stage1.put("taskType", Task.TYPE_RETURN);
+                    stage1.put("outID", outIdStage1);
+                    stage1.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
+                    stage1.put("palletNo", palletNo);
+                    stage1.put("fromBinCode", binCode);
+                    stage1.put("toBinCode", bufferBin);
+                    stage1.put("remark", "RETURN_CALL_PALLET_STAGE1");
+                    stage1.put("agvRange", "1");
+                    TaskDispatchResult stage1Result = wmsApiService.dispatchTask(stage1, ReturnWarehouseActivity.this);
+                    if (stage1Result == null) {
+                        throw new Exception("阶段1下发失败");
+                    }
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(ReturnWarehouseActivity.this, "阶段1已下发，等待完成...", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                    boolean stage1Completed = waitForTaskCompleted(outIdStage1);
+                    if (!stage1Completed) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ReturnWarehouseActivity.this, "阶段1未完成，停止后续下发", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        setReturnCallLock(false);
+                        return;
+                    }
+
+                    // 阶段2：接驳点 -> 送检目标站点
+                    String outIdStage2 = baseOutId + "-2";
+                    Map<String, String> stage2 = new HashMap<>();
+                    stage2.put("taskType", Task.TYPE_RETURN);
+                    stage2.put("outID", outIdStage2);
+                    stage2.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
+                    stage2.put("palletNo", palletNo);
+                    stage2.put("fromBinCode", dockBin);
+                    stage2.put("toBinCode", inspectionTargetBin);
+                    stage2.put("remark", "RETURN_CALL_PALLET_STAGE2");
+                    stage2.put("agvRange", "2");
+                    TaskDispatchResult result = wmsApiService.dispatchTask(stage2, ReturnWarehouseActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             if (result != null) {
-                                String taskNo = result.getOutID() != null ? result.getOutID() : outID;
-                                Toast.makeText(ReturnWarehouseActivity.this, 
-                                    "呼叫托盘成功，任务号：" + taskNo, 
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outIdStage2;
+                                Toast.makeText(ReturnWarehouseActivity.this,
+                                    "呼叫托盘已下发，任务号：" + taskNo,
                                     Toast.LENGTH_LONG).show();
                             } else {
-                                Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘失败", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "阶段2下发失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
+
+                    if (result == null) {
+                        setReturnCallLock(false);
+                        return;
+                    }
+
+                    boolean stage2Completed = waitForTaskCompleted(outIdStage2);
+                    if (!stage2Completed) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ReturnWarehouseActivity.this, "阶段2未完成", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        setReturnCallLock(false);
+                        return;
+                    }
+
+                    setReturnCallLock(false);
                 } catch (Exception e) {
                     e.printStackTrace();
                     runOnUiThread(new Runnable() {
@@ -175,6 +266,7 @@ public class ReturnWarehouseActivity extends Activity {
                             Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
+                    setReturnCallLock(false);
                 }
             }
         }).start();
@@ -183,19 +275,27 @@ public class ReturnWarehouseActivity extends Activity {
     /**
      * 阀门回库
      */
-    private void callValveReturn(String palletType) {
+    private void callValveReturn() {
         if (binCode == null || binCode.isEmpty()) {
             Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (inspectionTargetBin == null || inspectionTargetBin.isEmpty()) {
+            Toast.makeText(this, "送检目标站点未设置，请先完成送检", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (PreferenceUtil.getReturnValveLock(this)) {
+            Toast.makeText(this, "阀门回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
         
         new AlertDialog.Builder(this)
             .setTitle("确认阀门回库")
-            .setMessage("将" + palletType + "#阀门送回库位：" + binCode)
+            .setMessage("将阀门送回库位：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
-                    performValveReturn(palletType);
+                    performValveReturn();
                 }
             })
             .setNegativeButton("取消", null)
@@ -205,44 +305,107 @@ public class ReturnWarehouseActivity extends Activity {
     /**
      * 执行阀门回库
      */
-    private void performValveReturn(String palletType) {
+    private void performValveReturn() {
         Toast.makeText(this, "正在创建回库任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    // 生成任务编号
-                    String outID = DateUtil.generateTaskNo("H");
-                    
-                    Map<String, String> params = new HashMap<>();
-                    params.put("taskType", Task.TYPE_RETURN);
-                    params.put("outID", outID);
-                    params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    params.put("palletNo", palletNo);
-                    params.put("fromBinCode", inspectionStation);
-                    params.put("toBinCode", binCode);
-                    if (matCode != null) {
-                        params.put("matCode", matCode);
+                    String palletType = resolvePalletTypeCode(palletNo);
+                    if (palletType == null) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ReturnWarehouseActivity.this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        return;
                     }
-                    params.put("remark", "VALVE_RETURN");
-                    applyAgvRange(params);
-                    TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
+                    setValveReturnLock(true);
+                    String bufferBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_BUFFER_BIN : SMALL_BUFFER_BIN;
+                    String dockBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_DOCK_BIN : SMALL_DOCK_BIN;
+
+                    // 阶段1：目标站点 -> 接驳点
+                    String baseOutId = DateUtil.generateTaskNo("H");
+                    String outIdStage1 = baseOutId + "-1";
+                    Map<String, String> stage1 = new HashMap<>();
+                    stage1.put("taskType", Task.TYPE_RETURN);
+                    stage1.put("outID", outIdStage1);
+                    stage1.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
+                    stage1.put("palletNo", palletNo);
+                    stage1.put("fromBinCode", inspectionTargetBin);
+                    stage1.put("toBinCode", dockBin);
+                    stage1.put("remark", "VALVE_RETURN_STAGE1");
+                    stage1.put("agvRange", "2");
+                    TaskDispatchResult stage1Result = wmsApiService.dispatchTask(stage1, ReturnWarehouseActivity.this);
+                    if (stage1Result == null) {
+                        throw new Exception("阶段1下发失败");
+                    }
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(ReturnWarehouseActivity.this, "阶段1已下发，等待完成...", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                    boolean stage1Completed = waitForTaskCompleted(outIdStage1);
+                    if (!stage1Completed) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ReturnWarehouseActivity.this, "阶段1未完成，停止后续下发", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        setValveReturnLock(false);
+                        return;
+                    }
+
+                    // 阶段2：中转位 -> 库位
+                    String outIdStage2 = baseOutId + "-2";
+                    Map<String, String> stage2 = new HashMap<>();
+                    stage2.put("taskType", Task.TYPE_RETURN);
+                    stage2.put("outID", outIdStage2);
+                    stage2.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
+                    stage2.put("palletNo", palletNo);
+                    stage2.put("fromBinCode", bufferBin);
+                    stage2.put("toBinCode", binCode);
+                    if (matCode != null) {
+                        stage2.put("matCode", matCode);
+                    }
+                    stage2.put("remark", "VALVE_RETURN_STAGE2");
+                    stage2.put("agvRange", "1");
+                    TaskDispatchResult result = wmsApiService.dispatchTask(stage2, ReturnWarehouseActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             if (result != null) {
-                                String taskNo = result.getOutID() != null ? result.getOutID() : outID;
-                                updateStatus(true);
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outIdStage2;
                                 Toast.makeText(ReturnWarehouseActivity.this, 
                                     "阀门回库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
                             } else {
-                                Toast.makeText(ReturnWarehouseActivity.this, "阀门回库失败", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "阶段2下发失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
+                    if (result == null) {
+                        setValveReturnLock(false);
+                        return;
+                    }
+
+                    boolean stage2Completed = waitForTaskCompleted(outIdStage2);
+                    if (stage2Completed) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateStatus(true);
+                            }
+                        });
+                    }
+                    setValveReturnLock(false);
                 } catch (Exception e) {
                     e.printStackTrace();
                     runOnUiThread(new Runnable() {
@@ -251,6 +414,7 @@ public class ReturnWarehouseActivity extends Activity {
                             Toast.makeText(ReturnWarehouseActivity.this, "阀门回库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
+                    setValveReturnLock(false);
                 }
             }
         }).start();
@@ -273,6 +437,121 @@ public class ReturnWarehouseActivity extends Activity {
             params.put("agvRange", agvRange);
         }
     }
+
+    private void setReturnCallLock(boolean locked) {
+        PreferenceUtil.saveReturnCallPalletLock(this, locked);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateButtonLocks();
+            }
+        });
+    }
+
+    private void setValveReturnLock(boolean locked) {
+        PreferenceUtil.saveReturnValveLock(this, locked);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateButtonLocks();
+            }
+        });
+    }
+
+    private void updateButtonLocks() {
+        boolean callPalletLocked = PreferenceUtil.getReturnCallPalletLock(this);
+        boolean valveReturnLocked = PreferenceUtil.getReturnValveLock(this);
+        boolean callPalletEnabled = !callPalletLocked && !valveReturnLocked;
+        btnCallPallet.setEnabled(callPalletEnabled);
+        if (callPalletEnabled) {
+            btnCallPallet.setAlpha(1.0f);
+            btnCallPallet.setText(callPalletLabel);
+        } else {
+            btnCallPallet.setAlpha(0.4f);
+            if (valveReturnLocked) {
+                btnCallPallet.setText(callPalletLabel + "（阀门回库中）");
+            } else {
+                btnCallPallet.setText(callPalletLabel + "（呼叫托盘中）");
+            }
+        }
+
+        boolean valveReturnEnabled = !callPalletLocked && !valveReturnLocked;
+        btnValveReturn.setEnabled(valveReturnEnabled);
+        if (valveReturnEnabled) {
+            btnValveReturn.setAlpha(1.0f);
+            btnValveReturn.setText(valveReturnLabel);
+        } else {
+            btnValveReturn.setAlpha(0.4f);
+            if (valveReturnLocked) {
+                btnValveReturn.setText(valveReturnLabel + "（回库中）");
+            } else {
+                btnValveReturn.setText(valveReturnLabel + "（呼叫托盘中）");
+            }
+        }
+    }
+
+    private String resolvePalletTypeCode(String palletNo) {
+        if (palletNo == null) {
+            return null;
+        }
+        String normalized = palletNo.trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        String lower = normalized.toLowerCase();
+        if (lower.contains("t1")) {
+            return PALLET_TYPE_SMALL;
+        }
+        if (lower.contains("t2")) {
+            return PALLET_TYPE_LARGE;
+        }
+        char first = lower.charAt(0);
+        if (first == 'x') {
+            return PALLET_TYPE_SMALL;
+        }
+        if (first == 'd') {
+            return PALLET_TYPE_LARGE;
+        }
+        return null;
+    }
+
+    private boolean waitForTaskCompleted(String outId) {
+        long deadline = System.currentTimeMillis() + CALL_PALLET_TIMEOUT_MS;
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                Map<String, String> params = new HashMap<>();
+                String today = DateUtil.getCurrentDate();
+                params.put("startDate", today);
+                params.put("endDate", today);
+                params.put("pageNum", "1");
+                params.put("pageSize", "50");
+                params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
+                PageResponse<Task> pageResponse = wmsApiService.queryTasks(params, ReturnWarehouseActivity.this);
+                if (pageResponse != null && pageResponse.getList() != null) {
+                    for (Task task : pageResponse.getList()) {
+                        if (outId.equals(task.getTaskId())) {
+                            String status = task.getStatus();
+                            if (Task.STATUS_COMPLETED.equals(status)) {
+                                return true;
+                            }
+                            if (Task.STATUS_FAILED.equals(status) || Task.STATUS_CANCELLED.equals(status)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Continue polling until timeout.
+            }
+            try {
+                Thread.sleep(CALL_PALLET_POLL_INTERVAL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return false;
+    }
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -284,12 +563,19 @@ public class ReturnWarehouseActivity extends Activity {
                 palletNo = selectedValve.getPalletNo();
                 binCode = selectedValve.getBinCode();
                 matCode = selectedValve.getMatCode();
+                inspectionTargetBin = selectedValve.getInspectionTargetBin();
                 
                 tvPalletNo.setText(palletNo);
                 tvLocationCode.setText(binCode);
                 updateStatus(true);
             }
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateButtonLocks();
     }
 }
 

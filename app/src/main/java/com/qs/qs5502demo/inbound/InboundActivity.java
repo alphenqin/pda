@@ -60,6 +60,7 @@ public class InboundActivity extends Activity {
     private Handler handler = new Handler();
     private Runnable inboundLockRunnable;
     private boolean inboundLocked = false;
+    private boolean callInboundInProgress = false;
     private CharSequence callInboundLabel;
 
     @Override
@@ -453,6 +454,14 @@ public class InboundActivity extends Activity {
      * 执行呼叫入库
      */
     private void performCallInbound() {
+        if (callInboundInProgress) {
+            Toast.makeText(this, "入库任务下发中，请稍后再试", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        callInboundInProgress = true;
+        btnCallInbound.setEnabled(false);
+        btnCallInbound.setAlpha(0.4f);
+        btnCallInbound.setText(callInboundLabel + "（处理中）");
         // 显示加载提示
         Toast.makeText(this, "正在创建入库任务...", Toast.LENGTH_SHORT).show();
         
@@ -481,6 +490,7 @@ public class InboundActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            callInboundInProgress = false;
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 updateStatus(true);
@@ -490,6 +500,7 @@ public class InboundActivity extends Activity {
                             } else {
                                 Toast.makeText(InboundActivity.this, "呼叫入库失败", Toast.LENGTH_SHORT).show();
                             }
+                            applyInboundLock(inboundLocked);
                         }
                     });
                 } catch (Exception e) {
@@ -497,7 +508,9 @@ public class InboundActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            callInboundInProgress = false;
                             Toast.makeText(InboundActivity.this, "呼叫入库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            applyInboundLock(inboundLocked);
                         }
                     });
                 }
