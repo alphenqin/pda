@@ -83,6 +83,11 @@ public class HttpUtil {
                 handleUnauthorized(context);
                 throw new IOException("登录已过期，请重新登录");
             }
+            Integer bodyCode = extractCode(responseBody);
+            if (bodyCode != null && bodyCode == 401) {
+                handleUnauthorized(context);
+                throw new IOException("登录已过期，请重新登录");
+            }
 
             if (!response.isSuccessful()) {
                 String errorMessage = extractErrorMessage(responseBody);
@@ -155,6 +160,34 @@ public class HttpUtil {
             }
         } catch (Exception e) {
             Log.w(TAG, "Failed to parse error response", e);
+        }
+        return null;
+    }
+
+    private static Integer extractCode(String responseBody) {
+        if (responseBody == null || responseBody.isEmpty()) {
+            return null;
+        }
+        try {
+            JsonElement element = new JsonParser().parse(responseBody);
+            if (element != null && element.isJsonObject()) {
+                JsonObject obj = element.getAsJsonObject();
+                JsonElement code = obj.get("code");
+                if (code != null && !code.isJsonNull()) {
+                    if (code.isJsonPrimitive()) {
+                        try {
+                            return code.getAsInt();
+                        } catch (Exception ignored) {
+                            String raw = code.getAsString();
+                            if (raw != null && !raw.isEmpty()) {
+                                return Integer.parseInt(raw);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to parse code response", e);
         }
         return null;
     }
