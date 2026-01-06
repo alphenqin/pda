@@ -221,6 +221,28 @@ public class WmsApiService {
     }
 
     /**
+     * 托盘置空接口
+     */
+    public boolean unbindPallet(String palletNo, Context context) throws IOException {
+        String url = getBaseUrl() + "/pallet/unbind";
+
+        Map<String, String> request = new HashMap<>();
+        request.put("palletNo", palletNo);
+
+        String json = HttpUtil.toJson(request);
+        String response = HttpUtil.post(url, json, context);
+
+        Type type = new TypeToken<ApiResponse<Map<String, Object>>>(){}.getType();
+        ApiResponse<Map<String, Object>> apiResponse = HttpUtil.fromJson(response, type);
+
+        if (apiResponse.isSuccess()) {
+            return true;
+        } else {
+            throw new IOException(apiResponse.getMessage());
+        }
+    }
+
+    /**
      * 下发任务（PDA → WMS → AGV）
      */
     public TaskDispatchResult dispatchTask(Map<String, String> params, Context context) throws IOException {

@@ -245,6 +245,23 @@ public class OutboundActivity extends Activity {
 
                     boolean stage2Completed = waitForTaskCompleted(outIdStage2);
                     if (stage2Completed) {
+                        try {
+                            wmsApiService.unbindPallet(palletNo, OutboundActivity.this);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(OutboundActivity.this, "托盘已置空", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        } catch (Exception e) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(OutboundActivity.this,
+                                        "托盘置空失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
