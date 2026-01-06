@@ -1,6 +1,7 @@
 package com.qs.qs5502demo.api;
 
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -9,6 +10,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import com.qs.qs5502demo.LoginActivity;
 import com.qs.qs5502demo.util.PreferenceUtil;
 
 import java.io.IOException;
@@ -72,10 +74,16 @@ public class HttpUtil {
             if (response.body() != null) {
                 responseBody = response.body().string();
             }
-            
+
             Log.d(TAG, "Response Code: " + response.code());
             Log.d(TAG, "Response: " + responseBody);
-            
+
+            // 检查401状态码（未授权），自动退出登录
+            if (response.code() == 401) {
+                handleUnauthorized(context);
+                throw new IOException("登录已过期，请重新登录");
+            }
+
             if (!response.isSuccessful()) {
                 String errorMessage = extractErrorMessage(responseBody);
                 if (errorMessage != null && !errorMessage.isEmpty()) {
@@ -83,7 +91,7 @@ public class HttpUtil {
                 }
                 throw new IOException("Unexpected code " + response);
             }
-            
+
             return responseBody;
         }
     }
@@ -107,6 +115,25 @@ public class HttpUtil {
      */
     public static <T> T fromJson(String json, Type type) {
         return gson.fromJson(json, type);
+    }
+
+    /**
+     * 处理未授权情况，自动退出登录
+     */
+    private static void handleUnauthorized(Context context) {
+        if (context != null) {
+            // 清除保存的用户信息
+            PreferenceUtil.clearAll(context);
+
+            // 发送广播通知其他组件登录状态已改变
+            Intent intent = new Intent("com.qs.qs5502demo.ACTION_LOGOUT");
+            context.sendBroadcast(intent);
+
+            // 启动登录Activity
+            Intent loginIntent = new Intent(context, LoginActivity.class);
+            loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            context.startActivity(loginIntent);
+        }
     }
 
     private static String extractErrorMessage(String responseBody) {
