@@ -16,7 +16,7 @@ public class Valve implements Serializable {
     private String binCode;         // 库位号，与调度系统 binCode 一致
     private String locationCode;    // 库位号（兼容旧字段）
     private String valveStatus;     // 阀门状态：IN_STOCK/IN_INSPECTION/INSPECTED/OUTBOUND
-    private String inspectionTargetBin; // 送检目标站点（如 F1/F2/F3/F4）
+    private String inspectionTargetBin; // 送检目标站点（如 F1-检测点/F2-检测点/F3-检测点/F4-检测点）
 
     public Valve() {
     }
