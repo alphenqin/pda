@@ -28,7 +28,6 @@ public class SelectValveActivity extends Activity {
     
     private EditText etVendorName;
     private EditText etValveNo;
-    private EditText etValveModel;
     private EditText etInboundDate;
     private Button btnSearch;
     private Button btnConfirm;
@@ -56,7 +55,6 @@ public class SelectValveActivity extends Activity {
     private void initViews() {
         etVendorName = (EditText) findViewById(R.id.etVendorName);
         etValveNo = (EditText) findViewById(R.id.etValveNo);
-        etValveModel = (EditText) findViewById(R.id.etValveModel);
         etInboundDate = (EditText) findViewById(R.id.etInboundDate);
         btnSearch = (Button) findViewById(R.id.btnSearch);
         btnConfirm = (Button) findViewById(R.id.btnConfirm);
@@ -100,7 +98,6 @@ public class SelectValveActivity extends Activity {
         final Map<String, String> params = new HashMap<String, String>();
         String vendorName = etVendorName.getText().toString().trim();
         String valveNo = etValveNo.getText().toString().trim();
-        String valveModel = etValveModel.getText().toString().trim();
         String inboundDate = etInboundDate.getText().toString().trim();
         
         if (!vendorName.isEmpty()) {
@@ -108,9 +105,6 @@ public class SelectValveActivity extends Activity {
         }
         if (!valveNo.isEmpty()) {
             params.put("valveNo", valveNo);
-        }
-        if (!valveModel.isEmpty()) {
-            params.put("valveModel", valveModel);
         }
         if (!inboundDate.isEmpty()) {
             params.put("inboundDate", inboundDate);
@@ -209,7 +203,6 @@ public class SelectValveActivity extends Activity {
         class ViewHolder extends RecyclerView.ViewHolder {
             RadioButton rbSelected;
             TextView tvValveNo;
-            TextView tvValveModel;
             TextView tvVendorName;
             TextView tvPalletInfo;
             TextView tvInboundDate;
@@ -218,7 +211,6 @@ public class SelectValveActivity extends Activity {
                 super(itemView);
                 rbSelected = (RadioButton) itemView.findViewById(R.id.rbSelected);
                 tvValveNo = (TextView) itemView.findViewById(R.id.tvValveNo);
-                tvValveModel = (TextView) itemView.findViewById(R.id.tvValveModel);
                 tvVendorName = (TextView) itemView.findViewById(R.id.tvVendorName);
                 tvPalletInfo = (TextView) itemView.findViewById(R.id.tvPalletInfo);
                 tvInboundDate = (TextView) itemView.findViewById(R.id.tvInboundDate);
@@ -238,7 +230,6 @@ public class SelectValveActivity extends Activity {
             void bind(Valve valve, int position) {
                 rbSelected.setChecked(selectedValve == valve);
                 tvValveNo.setText("样品编号：" + valve.getValveNo());
-                tvValveModel.setText("样品型号：" + valve.getValveModel());
                 tvVendorName.setText("厂家：" + valve.getVendorName());
                 tvPalletInfo.setText("托盘：" + valve.getPalletNo() + "  库位：" + valve.getBinCode());
                 tvInboundDate.setText("入库日期：" + valve.getInboundDate());

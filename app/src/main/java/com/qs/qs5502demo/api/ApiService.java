@@ -29,7 +29,7 @@ public interface ApiService {
 
     /**
      * 根据条件查询阀门
-     * @param params 查询参数（厂家名称、阀门编号、阀门型号、入库日期等）
+     * @param params 查询参数（厂家名称、阀门编号、入库日期等）
      * @return 阀门列表
      */
     List<Valve> queryValves(Map<String, String> params);

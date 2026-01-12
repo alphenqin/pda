@@ -14,7 +14,7 @@ public class ApiConfig {
     // 本地开发环境
     private static final String DEFAULT_WMS_BASE_URL = "http://10.0.2.2:8080/api";
     // 部署环境
-//    private static final String DEFAULT_WMS_BASE_URL = "http://192.168.2.4:9080/api";
+//    private static final String DEFAULT_WMS_BASE_URL = "http://192.168.2.4:8080/api";
     
     // AGV调度系统接口基础地址
     private static final String DEFAULT_AGV_BASE_URL = "http://192.168.2.4:81/pt";

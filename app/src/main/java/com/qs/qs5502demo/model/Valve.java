@@ -9,7 +9,6 @@ public class Valve implements Serializable {
     private static final long serialVersionUID = 1L;
     private String valveNo;         // 阀门唯一编号（WMS 内部主键）
     private String matCode;         // 物料编码，对接 AGV 使用
-    private String valveModel;     // 阀门型号
     private String vendorName;      // 厂家名称
     private String inboundDate;     // 入库日期 yyyy-MM-dd
     private String palletNo;        // 托盘号
@@ -21,27 +20,12 @@ public class Valve implements Serializable {
     public Valve() {
     }
 
-    public Valve(String valveNo, String valveModel, String vendorName, String inboundDate) {
-        this.valveNo = valveNo;
-        this.valveModel = valveModel;
-        this.vendorName = vendorName;
-        this.inboundDate = inboundDate;
-    }
-
     public String getValveNo() {
         return valveNo;
     }
 
     public void setValveNo(String valveNo) {
         this.valveNo = valveNo;
-    }
-
-    public String getValveModel() {
-        return valveModel;
-    }
-
-    public void setValveModel(String valveModel) {
-        this.valveModel = valveModel;
     }
 
     public String getVendorName() {

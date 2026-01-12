@@ -21,7 +21,6 @@ public class BindValveActivity extends Activity {
     private EditText etInboundDate;
     private EditText etVendorName;
     private EditText etValveNo;
-    private EditText etValveModel;
     private Button btnSubmit;
     private Button btnCancel;
     
@@ -62,7 +61,6 @@ public class BindValveActivity extends Activity {
         etInboundDate = (EditText) findViewById(R.id.etInboundDate);
         etVendorName = (EditText) findViewById(R.id.etVendorName);
         etValveNo = (EditText) findViewById(R.id.etValveNo);
-        etValveModel = (EditText) findViewById(R.id.etValveModel);
         btnSubmit = (Button) findViewById(R.id.btnSubmit);
         btnCancel = (Button) findViewById(R.id.btnCancel);
     }
@@ -98,24 +96,17 @@ public class BindValveActivity extends Activity {
         // 表单校验
         String vendorName = etVendorName.getText().toString().trim();
         String valveNo = etValveNo.getText().toString().trim();
-        String valveModel = etValveModel.getText().toString().trim();
         String inboundDate = etInboundDate.getText().toString().trim();
         
         if (vendorName.isEmpty()) {
-            Toast.makeText(this, "请输入厂家名称", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请输入送检单位", Toast.LENGTH_SHORT).show();
             etVendorName.requestFocus();
             return;
         }
-        
+
         if (valveNo.isEmpty()) {
-            Toast.makeText(this, "请输入样品编号", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请输入出厂编号", Toast.LENGTH_SHORT).show();
             etValveNo.requestFocus();
-            return;
-        }
-        
-        if (valveModel.isEmpty()) {
-            Toast.makeText(this, "请输入样品型号", Toast.LENGTH_SHORT).show();
-            etValveModel.requestFocus();
             return;
         }
         
@@ -128,13 +119,12 @@ public class BindValveActivity extends Activity {
         // 创建阀门对象
         Valve valve = new Valve();
         valve.setValveNo(valveNo);
-        valve.setValveModel(valveModel);
         valve.setVendorName(vendorName);
         valve.setInboundDate(inboundDate);
         valve.setPalletNo(palletNo);
         valve.setBinCode(binCode);
         // 生成物料编码（可以根据实际规则生成，这里简单处理）
-        valve.setMatCode("MAT-" + valveModel + "-" + valveNo);
+        valve.setMatCode("MAT-" + valveNo);
         
         // 显示加载提示
         Toast.makeText(this, "正在绑定...", Toast.LENGTH_SHORT).show();

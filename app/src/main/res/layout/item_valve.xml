@@ -38,15 +38,6 @@
                 android:textColor="#333333" />
 
             <TextView
-                android:id="@+id/tvValveModel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="样品型号：DN50"
-                android:textSize="16sp"
-                android:textColor="#666666"
-                android:layout_marginTop="4dp" />
-
-            <TextView
                 android:id="@+id/tvVendorName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

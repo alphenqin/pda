@@ -97,31 +97,6 @@
                     android:background="#F0F0F0" />
             </LinearLayout>
 
-            <!-- 阀门型号 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="8dp"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:layout_width="100dp"
-                    android:layout_height="wrap_content"
-                    android:text="样品型号："
-                    android:textSize="16sp" />
-
-                <EditText
-                    android:id="@+id/etValveModel"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="请输入样品型号"
-                    android:textSize="16sp"
-                    android:padding="8dp"
-                    android:background="#F0F0F0" />
-            </LinearLayout>
-
             <!-- 入库日期 -->
             <LinearLayout
                 android:layout_width="match_parent"
