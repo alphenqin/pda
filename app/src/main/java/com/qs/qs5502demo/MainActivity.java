@@ -164,7 +164,7 @@ public class MainActivity extends Activity {
 			return;
 		}
 		if (targetActivity == InboundActivity.class && returnValveLocked) {
-			Toast.makeText(MainActivity.this, "阀门回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
+			Toast.makeText(MainActivity.this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
 			return;
 		}
 		if (targetActivity == InboundActivity.class && returnCallLocked) {
@@ -173,7 +173,7 @@ public class MainActivity extends Activity {
 		}
 		if ((targetActivity == SendInspectionActivity.class || targetActivity == OutboundActivity.class)
 			&& returnValveLocked) {
-			Toast.makeText(MainActivity.this, "阀门回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
+			Toast.makeText(MainActivity.this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
 			return;
 		}
 		if ((targetActivity == SendInspectionActivity.class || targetActivity == OutboundActivity.class)
@@ -262,7 +262,7 @@ public class MainActivity extends Activity {
 			} else if (inspectionLocked) {
 				message = "送检任务执行中，入库/回库/出库已锁定";
 			} else if (returnValveLocked) {
-				message = "阀门回库进行中，入库/送检/出库已锁定";
+				message = "样品回库进行中，入库/送检/出库已锁定";
 			} else if (returnCallLocked) {
 				message = "呼叫托盘进行中，入库/送检/出库已锁定";
 			} else if (outboundLocked) {
@@ -277,13 +277,13 @@ public class MainActivity extends Activity {
 
 		boolean inboundEnabled = !inspectionLocked && !returnCallLocked && !returnValveLocked && !outboundLocked && !outboundEmptyReturnLocked;
 		String inboundReason = inspectionLocked ? "送检锁定"
-			: (returnValveLocked ? "阀门回库中"
+			: (returnValveLocked ? "样品回库中"
 				: (returnCallLocked ? "呼叫托盘中"
 					: (outboundLocked ? "出库中" : (outboundEmptyReturnLocked ? "空托回库中" : null))));
 		updateLockedButton(btnInbound, inboundLabel, inboundEnabled, inboundReason);
 		boolean sendEnabled = !inboundLocked && !returnCallLocked && !returnValveLocked && !outboundLocked && !outboundEmptyReturnLocked;
 		String sendReason = inboundLocked ? "入库锁定"
-			: (returnValveLocked ? "阀门回库中"
+			: (returnValveLocked ? "样品回库中"
 				: (returnCallLocked ? "呼叫托盘中"
 					: (outboundLocked ? "出库中" : (outboundEmptyReturnLocked ? "空托回库中" : null))));
 		updateLockedButton(btnSendInspection, sendInspectionLabel, sendEnabled, sendReason);
@@ -295,7 +295,7 @@ public class MainActivity extends Activity {
 		boolean outboundEnabled = !inboundLocked && !inspectionLocked && !returnCallLocked && !returnValveLocked;
 		String outboundReason = inboundLocked ? "入库锁定"
 			: (inspectionLocked ? "送检锁定"
-				: (returnValveLocked ? "阀门回库中" : (returnCallLocked ? "呼叫托盘中" : null)));
+			: (returnValveLocked ? "样品回库中" : (returnCallLocked ? "呼叫托盘中" : null)));
 		updateLockedButton(btnOutbound, outboundLabel, outboundEnabled, outboundReason);
 	}
 

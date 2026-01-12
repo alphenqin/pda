@@ -172,7 +172,7 @@ public class SelectValveActivity extends Activity {
      */
     private void confirmSelection() {
         if (selectedValve == null) {
-            Toast.makeText(this, "请选择一条阀门记录", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请选择一条样品记录", Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -237,8 +237,8 @@ public class SelectValveActivity extends Activity {
             
             void bind(Valve valve, int position) {
                 rbSelected.setChecked(selectedValve == valve);
-                tvValveNo.setText("阀门编号：" + valve.getValveNo());
-                tvValveModel.setText("阀门型号：" + valve.getValveModel());
+                tvValveNo.setText("样品编号：" + valve.getValveNo());
+                tvValveModel.setText("样品型号：" + valve.getValveModel());
                 tvVendorName.setText("厂家：" + valve.getVendorName());
                 tvPalletInfo.setText("托盘：" + valve.getPalletNo() + "  库位：" + valve.getBinCode());
                 tvInboundDate.setText("入库日期：" + valve.getInboundDate());

@@ -25,7 +25,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="阀门绑定"
+                android:text="样品绑定"
                 android:textColor="@color/text_white"
                 android:textSize="26sp"
                 android:textStyle="bold" />
@@ -105,7 +105,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="阀门信息"
+                android:text="样品信息"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:paddingBottom="8dp" />
@@ -171,7 +171,7 @@
                 <TextView
                     android:layout_width="120dp"
                     android:layout_height="wrap_content"
-                    android:text="阀门编号："
+                    android:text="样品编号："
                     android:textSize="18sp" />
 
                 <EditText
@@ -179,7 +179,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="请输入阀门编号"
+                    android:hint="请输入样品编号"
                     android:textSize="18sp"
                     android:padding="8dp"
                     android:background="#F0F0F0" />
@@ -196,7 +196,7 @@
                 <TextView
                     android:layout_width="120dp"
                     android:layout_height="wrap_content"
-                    android:text="阀门型号："
+                    android:text="样品型号："
                     android:textSize="18sp" />
 
                 <EditText
@@ -204,7 +204,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="请输入阀门型号"
+                    android:hint="请输入样品型号"
                     android:textSize="18sp"
                     android:padding="8dp"
                     android:background="#F0F0F0" />

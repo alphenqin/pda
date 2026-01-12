@@ -117,7 +117,7 @@ public class SendInspectionActivity extends Activity {
      */
     private void callSendInspection() {
         if (selectedValve == null || palletNo == null || palletNo.isEmpty()) {
-            Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -143,7 +143,7 @@ public class SendInspectionActivity extends Activity {
     private void showSendInspectionConfirm(String area, String areaLabel) {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫送检")
-            .setMessage("阀门编号：" + selectedValve.getValveNo() +
+            .setMessage("样品编号：" + selectedValve.getValveNo() +
                        "\n托盘号：" + palletNo +
                        "\n库位号：" + binCode +
                        "\n目标区域：" + areaLabel)
@@ -231,7 +231,7 @@ public class SendInspectionActivity extends Activity {
      */
     private void callEmptyPalletReturn() {
         if (binCode == null || binCode.isEmpty()) {
-            Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
         

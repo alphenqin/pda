@@ -224,7 +224,7 @@ public class InboundActivity extends Activity {
         }
         
         if (!isValveBound) {
-            Toast.makeText(this, "请先完成阀门绑定", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先完成样品绑定", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -546,7 +546,7 @@ public class InboundActivity extends Activity {
             }
             isValveBound = true;
             updateStatus(true);
-            Toast.makeText(this, "阀门绑定成功", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "样品绑定成功", Toast.LENGTH_SHORT).show();
         }
     }
 

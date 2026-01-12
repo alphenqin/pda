@@ -108,13 +108,13 @@ public class BindValveActivity extends Activity {
         }
         
         if (valveNo.isEmpty()) {
-            Toast.makeText(this, "请输入阀门编号", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请输入样品编号", Toast.LENGTH_SHORT).show();
             etValveNo.requestFocus();
             return;
         }
         
         if (valveModel.isEmpty()) {
-            Toast.makeText(this, "请输入阀门型号", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请输入样品型号", Toast.LENGTH_SHORT).show();
             etValveModel.requestFocus();
             return;
         }

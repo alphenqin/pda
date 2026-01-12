@@ -137,7 +137,7 @@
             android:layout_width="match_parent"
             android:layout_height="100dp"
             android:layout_marginBottom="16dp"
-            android:text="1. 选阀门"
+            android:text="1. 选样品"
             android:textSize="24sp"
             android:textStyle="bold"
             android:background="#2196F3"

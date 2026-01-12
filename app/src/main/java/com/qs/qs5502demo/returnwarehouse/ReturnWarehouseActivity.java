@@ -120,11 +120,11 @@ public class ReturnWarehouseActivity extends Activity {
             return;
         }
         if (PreferenceUtil.getReturnValveLock(this)) {
-            Toast.makeText(this, "阀门回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
         if (selectedValve == null || palletNo == null || palletNo.isEmpty()) {
-            Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
         if (inspectionTargetBin == null || inspectionTargetBin.isEmpty()) {
@@ -277,7 +277,7 @@ public class ReturnWarehouseActivity extends Activity {
      */
     private void callValveReturn() {
         if (binCode == null || binCode.isEmpty()) {
-            Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
         if (inspectionTargetBin == null || inspectionTargetBin.isEmpty()) {
@@ -285,13 +285,13 @@ public class ReturnWarehouseActivity extends Activity {
             return;
         }
         if (PreferenceUtil.getReturnValveLock(this)) {
-            Toast.makeText(this, "阀门回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
         
         new AlertDialog.Builder(this)
-            .setTitle("确认阀门回库")
-            .setMessage("将阀门送回库位：" + binCode)
+            .setTitle("确认样品回库")
+            .setMessage("将样品送回库位：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -384,7 +384,7 @@ public class ReturnWarehouseActivity extends Activity {
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outIdStage2;
                                 Toast.makeText(ReturnWarehouseActivity.this, 
-                                    "阀门回库成功，任务号：" + taskNo, 
+                                    "样品回库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(ReturnWarehouseActivity.this, "阶段2下发失败", Toast.LENGTH_SHORT).show();
@@ -411,7 +411,7 @@ public class ReturnWarehouseActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(ReturnWarehouseActivity.this, "阀门回库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ReturnWarehouseActivity.this, "样品回库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
                     setValveReturnLock(false);
@@ -469,7 +469,7 @@ public class ReturnWarehouseActivity extends Activity {
         } else {
             btnCallPallet.setAlpha(0.4f);
             if (valveReturnLocked) {
-                btnCallPallet.setText(callPalletLabel + "（阀门回库中）");
+                btnCallPallet.setText(callPalletLabel + "（样品回库中）");
             } else {
                 btnCallPallet.setText(callPalletLabel + "（呼叫托盘中）");
             }

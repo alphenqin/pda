@@ -128,13 +128,13 @@ public class OutboundActivity extends Activity {
             return;
         }
         if (selectedValve == null || palletNo == null || palletNo.isEmpty()) {
-            Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
         
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫出库")
-            .setMessage("阀门编号：" + selectedValve.getValveNo() + 
+            .setMessage("样品编号：" + selectedValve.getValveNo() + 
                        "\n托盘号：" + palletNo + 
                        "\n库位号：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
@@ -289,7 +289,7 @@ public class OutboundActivity extends Activity {
      */
     private void callEmptyPalletReturn() {
         if (binCode == null || binCode.isEmpty()) {
-            Toast.makeText(this, "请先选择阀门", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
         if (PreferenceUtil.getOutboundEmptyReturnLock(this)) {

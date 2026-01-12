@@ -32,7 +32,7 @@
                 android:id="@+id/tvValveNo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="阀门编号：V20250101-001"
+                android:text="样品编号：V20250101-001"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#333333" />
@@ -41,7 +41,7 @@
                 android:id="@+id/tvValveModel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="阀门型号：DN50"
+                android:text="样品型号：DN50"
                 android:textSize="16sp"
                 android:textColor="#666666"
                 android:layout_marginTop="4dp" />
@@ -50,7 +50,7 @@
                 android:id="@+id/tvVendorName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="厂家：XX阀门厂"
+                android:text="厂家：XX样品厂"
                 android:textSize="16sp"
                 android:textColor="#666666"
                 android:layout_marginTop="4dp" />
