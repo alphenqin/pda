@@ -174,68 +174,31 @@ public class ReturnWarehouseActivity extends Activity {
                         return;
                     }
                     setReturnCallLock(true);
-                    String bufferBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_BUFFER_BIN : SMALL_BUFFER_BIN;
-                    String dockBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_DOCK_BIN : SMALL_DOCK_BIN;
 
-                    // 阶段1：库位 -> 中转位
-                    String baseOutId = DateUtil.generateTaskNo("H");
-                    String outIdStage1 = baseOutId + "-1";
-                    Map<String, String> stage1 = new HashMap<>();
-                    stage1.put("taskType", Task.TYPE_RETURN);
-                    stage1.put("outID", outIdStage1);
-                    stage1.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    stage1.put("palletNo", palletNo);
-                    stage1.put("fromBinCode", binCode);
-                    stage1.put("toBinCode", bufferBin);
-                    stage1.put("remark", "RETURN_CALL_PALLET_STAGE1");
-                    stage1.put("agvRange", "1");
-                    TaskDispatchResult stage1Result = wmsApiService.dispatchTask(stage1, ReturnWarehouseActivity.this);
-                    if (stage1Result == null) {
-                        throw new Exception("阶段1下发失败");
+                    String outId = DateUtil.generateTaskNo("H");
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_RETURN);
+                    params.put("outID", outId);
+                    params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
+                    params.put("palletNo", palletNo);
+                    params.put("fromBinCode", binCode);
+                    params.put("toBinCode", inspectionTargetBin);
+                    params.put("remark", "RETURN_CALL_PALLET");
+                    if (selectedValve != null && selectedValve.getValveNo() != null) {
+                        params.put("valveNo", selectedValve.getValveNo());
                     }
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(ReturnWarehouseActivity.this, "阶段1已下发，等待完成...", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-
-                    boolean stage1Completed = waitForTaskCompleted(outIdStage1);
-                    if (!stage1Completed) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "阶段1未完成，停止后续下发", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        setReturnCallLock(false);
-                        return;
-                    }
-
-                    // 阶段2：接驳点 -> 送检目标站点
-                    String outIdStage2 = baseOutId + "-2";
-                    Map<String, String> stage2 = new HashMap<>();
-                    stage2.put("taskType", Task.TYPE_RETURN);
-                    stage2.put("outID", outIdStage2);
-                    stage2.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    stage2.put("palletNo", palletNo);
-                    stage2.put("fromBinCode", dockBin);
-                    stage2.put("toBinCode", inspectionTargetBin);
-                    stage2.put("remark", "RETURN_CALL_PALLET_STAGE2");
-                    stage2.put("agvRange", "2");
-                    TaskDispatchResult result = wmsApiService.dispatchTask(stage2, ReturnWarehouseActivity.this);
+                    TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             if (result != null) {
-                                String taskNo = result.getOutID() != null ? result.getOutID() : outIdStage2;
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outId;
                                 Toast.makeText(ReturnWarehouseActivity.this,
                                     "呼叫托盘已下发，任务号：" + taskNo,
                                     Toast.LENGTH_LONG).show();
                             } else {
-                                Toast.makeText(ReturnWarehouseActivity.this, "阶段2下发失败", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘下发失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
@@ -245,12 +208,13 @@ public class ReturnWarehouseActivity extends Activity {
                         return;
                     }
 
-                    boolean stage2Completed = waitForTaskCompleted(outIdStage2);
-                    if (!stage2Completed) {
+                    String taskNo = result.getOutID() != null ? result.getOutID() : outId;
+                    boolean completed = waitForTaskCompleted(taskNo);
+                    if (!completed) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "阶段2未完成", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘未完成", Toast.LENGTH_SHORT).show();
                             }
                         });
                         setReturnCallLock(false);
@@ -323,71 +287,34 @@ public class ReturnWarehouseActivity extends Activity {
                         return;
                     }
                     setValveReturnLock(true);
-                    String bufferBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_BUFFER_BIN : SMALL_BUFFER_BIN;
-                    String dockBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_DOCK_BIN : SMALL_DOCK_BIN;
 
-                    // 阶段1：目标站点 -> 接驳点
-                    String baseOutId = DateUtil.generateTaskNo("H");
-                    String outIdStage1 = baseOutId + "-1";
-                    Map<String, String> stage1 = new HashMap<>();
-                    stage1.put("taskType", Task.TYPE_RETURN);
-                    stage1.put("outID", outIdStage1);
-                    stage1.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    stage1.put("palletNo", palletNo);
-                    stage1.put("fromBinCode", inspectionTargetBin);
-                    stage1.put("toBinCode", dockBin);
-                    stage1.put("remark", "VALVE_RETURN_STAGE1");
-                    stage1.put("agvRange", "2");
-                    TaskDispatchResult stage1Result = wmsApiService.dispatchTask(stage1, ReturnWarehouseActivity.this);
-                    if (stage1Result == null) {
-                        throw new Exception("阶段1下发失败");
-                    }
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(ReturnWarehouseActivity.this, "阶段1已下发，等待完成...", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-
-                    boolean stage1Completed = waitForTaskCompleted(outIdStage1);
-                    if (!stage1Completed) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "阶段1未完成，停止后续下发", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        setValveReturnLock(false);
-                        return;
-                    }
-
-                    // 阶段2：中转位 -> 库位
-                    String outIdStage2 = baseOutId + "-2";
-                    Map<String, String> stage2 = new HashMap<>();
-                    stage2.put("taskType", Task.TYPE_RETURN);
-                    stage2.put("outID", outIdStage2);
-                    stage2.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    stage2.put("palletNo", palletNo);
-                    stage2.put("fromBinCode", bufferBin);
-                    stage2.put("toBinCode", binCode);
+                    String outId = DateUtil.generateTaskNo("H");
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_RETURN);
+                    params.put("outID", outId);
+                    params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
+                    params.put("palletNo", palletNo);
+                    params.put("fromBinCode", inspectionTargetBin);
+                    params.put("toBinCode", binCode);
                     if (matCode != null) {
-                        stage2.put("matCode", matCode);
+                        params.put("matCode", matCode);
                     }
-                    stage2.put("remark", "VALVE_RETURN_STAGE2");
-                    stage2.put("agvRange", "1");
-                    TaskDispatchResult result = wmsApiService.dispatchTask(stage2, ReturnWarehouseActivity.this);
+                    params.put("remark", "VALVE_RETURN");
+                    if (selectedValve != null && selectedValve.getValveNo() != null) {
+                        params.put("valveNo", selectedValve.getValveNo());
+                    }
+                    TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             if (result != null) {
-                                String taskNo = result.getOutID() != null ? result.getOutID() : outIdStage2;
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outId;
                                 Toast.makeText(ReturnWarehouseActivity.this, 
                                     "样品回库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
                             } else {
-                                Toast.makeText(ReturnWarehouseActivity.this, "阶段2下发失败", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "样品回库下发失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
@@ -396,12 +323,20 @@ public class ReturnWarehouseActivity extends Activity {
                         return;
                     }
 
-                    boolean stage2Completed = waitForTaskCompleted(outIdStage2);
-                    if (stage2Completed) {
+                    String taskNo = result.getOutID() != null ? result.getOutID() : outId;
+                    boolean completed = waitForTaskCompleted(taskNo);
+                    if (completed) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 updateStatus(true);
+                            }
+                        });
+                    } else {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ReturnWarehouseActivity.this, "样品回库未完成", Toast.LENGTH_SHORT).show();
                             }
                         });
                     }
