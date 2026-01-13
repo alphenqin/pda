@@ -52,8 +52,8 @@ public class OutboundActivity extends Activity {
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
     private static final String LARGE_DOCK_BIN = "D2-大托盘接驳点";
-    private static final String SMALL_OUTBOUND_TARGET = "Z3-检测点";
-    private static final String LARGE_OUTBOUND_TARGET = "Z4-检测点";
+    private static final String SMALL_OUTBOUND_RETURN_START = "Z3-装卸点";
+    private static final String LARGE_OUTBOUND_RETURN_START = "Z4-装卸点";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,79 +157,26 @@ public class OutboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    String palletType = resolvePalletTypeCode(palletNo);
-                    if (palletType == null) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(OutboundActivity.this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        return;
-                    }
                     setOutboundLock(true);
-                    String bufferBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_BUFFER_BIN : SMALL_BUFFER_BIN;
-                    String dockBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_DOCK_BIN : SMALL_DOCK_BIN;
-                    String targetBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_OUTBOUND_TARGET : SMALL_OUTBOUND_TARGET;
-
-                    // 阶段1：库位 -> 中转位
-                    String baseOutId = DateUtil.generateTaskNo("C");
-                    String outIdStage1 = baseOutId + "-1";
-                    Map<String, String> stage1 = new HashMap<>();
-                    stage1.put("taskType", Task.TYPE_OUTBOUND);
-                    stage1.put("outID", outIdStage1);
-                    stage1.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
-                    stage1.put("palletNo", palletNo);
-                    stage1.put("fromBinCode", binCode);
-                    stage1.put("toBinCode", bufferBin);
-                    stage1.put("remark", "OUTBOUND_STAGE1");
-                    stage1.put("agvRange", "1");
-                    TaskDispatchResult stage1Result = wmsApiService.dispatchTask(stage1, OutboundActivity.this);
-                    if (stage1Result == null) {
-                        throw new Exception("阶段1下发失败");
-                    }
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(OutboundActivity.this, "阶段1已下发，等待完成...", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-
-                    boolean stage1Completed = waitForTaskCompleted(outIdStage1);
-                    if (!stage1Completed) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(OutboundActivity.this, "阶段1未完成，停止后续下发", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        setOutboundLock(false);
-                        return;
-                    }
-
-                    // 阶段2：接驳点 -> 检测点
-                    String outIdStage2 = baseOutId + "-2";
-                    Map<String, String> stage2 = new HashMap<>();
-                    stage2.put("taskType", Task.TYPE_OUTBOUND);
-                    stage2.put("outID", outIdStage2);
-                    stage2.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
-                    stage2.put("palletNo", palletNo);
-                    stage2.put("fromBinCode", dockBin);
-                    stage2.put("toBinCode", targetBin);
+                    String outId = DateUtil.generateTaskNo("C");
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_OUTBOUND);
+                    params.put("outID", outId);
+                    params.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
+                    params.put("palletNo", palletNo);
+                    params.put("fromBinCode", binCode);
+                    params.put("toBinCode", binCode);
                     if (matCode != null) {
-                        stage2.put("matCode", matCode);
+                        params.put("matCode", matCode);
                     }
-                    stage2.put("remark", "OUTBOUND_STAGE2");
-                    stage2.put("agvRange", "2");
-                    TaskDispatchResult result = wmsApiService.dispatchTask(stage2, OutboundActivity.this);
+                    TaskDispatchResult result = wmsApiService.dispatchTask(params, OutboundActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             if (result != null) {
-                                String taskNo = result.getOutID() != null ? result.getOutID() : outIdStage2;
-                                lastOutboundToBinCode = targetBin;
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outId;
+                                lastOutboundToBinCode = result.getToBinCode();
                                 Toast.makeText(OutboundActivity.this, 
                                     "呼叫出库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
@@ -243,29 +190,13 @@ public class OutboundActivity extends Activity {
                         return;
                     }
 
-                    boolean stage2Completed = waitForTaskCompleted(outIdStage2);
-                    if (stage2Completed) {
-                        try {
-                            wmsApiService.unbindPallet(palletNo, OutboundActivity.this);
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(OutboundActivity.this, "托盘已置空", Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                        } catch (Exception e) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(OutboundActivity.this,
-                                        "托盘置空失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                        }
+                    String taskNo = result.getOutID() != null ? result.getOutID() : outId;
+                    boolean completed = waitForTaskCompleted(taskNo);
+                    if (!completed) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                updateStatus(true);
+                                Toast.makeText(OutboundActivity.this, "出库任务未完成", Toast.LENGTH_SHORT).show();
                             }
                         });
                     }
@@ -307,7 +238,7 @@ public class OutboundActivity extends Activity {
         
         new AlertDialog.Builder(this)
             .setTitle("确认空托回库")
-            .setMessage("将空托盘送回库位：" + binCode)
+            .setMessage("将空托盘从" + resolveOutboundEmptyReturnStart() + "送回库位：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -328,78 +259,25 @@ public class OutboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    String palletType = resolvePalletTypeCode(palletNo);
-                    if (palletType == null) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(OutboundActivity.this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        return;
-                    }
                     setOutboundEmptyReturnLock(true);
-                    String bufferBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_BUFFER_BIN : SMALL_BUFFER_BIN;
-                    String dockBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_DOCK_BIN : SMALL_DOCK_BIN;
-
-                    // 阶段1：检测点 -> 接驳点
-                    String baseOutId = DateUtil.generateTaskNo("H");
-                    String outIdStage1 = baseOutId + "-1";
-                    Map<String, String> stage1 = new HashMap<>();
-                    stage1.put("taskType", Task.TYPE_RETURN);
-                    stage1.put("outID", outIdStage1);
-                    stage1.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
+                    String outId = DateUtil.generateTaskNo("H");
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_RETURN);
+                    params.put("outID", outId);
+                    params.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
                     if (palletNo != null) {
-                        stage1.put("palletNo", palletNo);
+                        params.put("palletNo", palletNo);
                     }
-                    stage1.put("fromBinCode", lastOutboundToBinCode);
-                    stage1.put("toBinCode", dockBin);
-                    stage1.put("remark", "OUTBOUND_EMPTY_RETURN_STAGE1");
-                    stage1.put("agvRange", "2");
-                    TaskDispatchResult stage1Result = wmsApiService.dispatchTask(stage1, OutboundActivity.this);
-                    if (stage1Result == null) {
-                        throw new Exception("阶段1下发失败");
-                    }
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(OutboundActivity.this, "阶段1已下发，等待完成...", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-
-                    boolean stage1Completed = waitForTaskCompleted(outIdStage1);
-                    if (!stage1Completed) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(OutboundActivity.this, "阶段1未完成，停止后续下发", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        setOutboundEmptyReturnLock(false);
-                        return;
-                    }
-
-                    // 阶段2：中转位 -> 库位
-                    String outIdStage2 = baseOutId + "-2";
-                    Map<String, String> stage2 = new HashMap<>();
-                    stage2.put("taskType", Task.TYPE_RETURN);
-                    stage2.put("outID", outIdStage2);
-                    stage2.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
-                    if (palletNo != null) {
-                        stage2.put("palletNo", palletNo);
-                    }
-                    stage2.put("fromBinCode", bufferBin);
-                    stage2.put("toBinCode", binCode);
-                    stage2.put("remark", "OUTBOUND_EMPTY_RETURN_STAGE2");
-                    stage2.put("agvRange", "1");
-                    TaskDispatchResult result = wmsApiService.dispatchTask(stage2, OutboundActivity.this);
+                    params.put("fromBinCode", lastOutboundToBinCode);
+                    params.put("toBinCode", binCode);
+                    params.put("remark", "OUTBOUND_EMPTY_RETURN");
+                    TaskDispatchResult result = wmsApiService.dispatchTask(params, OutboundActivity.this);
                     
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             if (result != null) {
-                                String taskNo = result.getOutID() != null ? result.getOutID() : outIdStage2;
+                                String taskNo = result.getOutID() != null ? result.getOutID() : outId;
                                 Toast.makeText(OutboundActivity.this, 
                                     "空托回库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
@@ -413,9 +291,15 @@ public class OutboundActivity extends Activity {
                         return;
                     }
 
-                    boolean stage2Completed = waitForTaskCompleted(outIdStage2);
-                    if (stage2Completed) {
-                        // No UI state to update besides lock.
+                    String taskNo = result.getOutID() != null ? result.getOutID() : outId;
+                    boolean completed = waitForTaskCompleted(taskNo);
+                    if (!completed) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(OutboundActivity.this, "空托回库未完成", Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }
                     setOutboundEmptyReturnLock(false);
                 } catch (Exception e) {
@@ -525,6 +409,17 @@ public class OutboundActivity extends Activity {
             return PALLET_TYPE_LARGE;
         }
         return null;
+    }
+
+    private String resolveOutboundEmptyReturnStart() {
+        String palletType = resolvePalletTypeCode(palletNo);
+        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
+            return LARGE_OUTBOUND_RETURN_START;
+        }
+        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
+            return SMALL_OUTBOUND_RETURN_START;
+        }
+        return "装卸点";
     }
 
     private boolean waitForTaskCompleted(String outId) {
