@@ -31,6 +31,7 @@ public class HttpUtil {
     private static final String TAG = "HttpUtil";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     private static final int TIMEOUT = 10; // 超时时间（秒）
+    private static final int CALL_TIMEOUT = 15; // 整体请求超时（秒）
     
     private static OkHttpClient client;
     private static Gson gson;
@@ -40,6 +41,7 @@ public class HttpUtil {
                 .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
                 .readTimeout(TIMEOUT, TimeUnit.SECONDS)
                 .writeTimeout(TIMEOUT, TimeUnit.SECONDS)
+                .callTimeout(CALL_TIMEOUT, TimeUnit.SECONDS)
                 .build();
         
         gson = new GsonBuilder()
