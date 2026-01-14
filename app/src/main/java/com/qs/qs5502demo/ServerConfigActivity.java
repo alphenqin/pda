@@ -5,9 +5,11 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
+import com.qs.pda5502demo.BuildConfig;
 import com.qs.qs5502demo.api.ApiConfig;
 
 public class ServerConfigActivity extends Activity {
@@ -17,6 +19,7 @@ public class ServerConfigActivity extends Activity {
     private EditText etAgvRange;
     private Button btnSave;
     private Button btnReset;
+    private TextView tvAppVersion;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +38,7 @@ public class ServerConfigActivity extends Activity {
         etAgvRange = (EditText) findViewById(R.id.etAgvRange);
         btnSave = (Button) findViewById(R.id.btnSave);
         btnReset = (Button) findViewById(R.id.btnReset);
+        tvAppVersion = (TextView) findViewById(R.id.tvAppVersion);
     }
     
     /**
@@ -43,6 +47,10 @@ public class ServerConfigActivity extends Activity {
     private void loadConfig() {
         // 初始化ApiConfig
         ApiConfig.init(this);
+
+        if (tvAppVersion != null) {
+            tvAppVersion.setText("APP 版本 V" + BuildConfig.VERSION_NAME);
+        }
         
         // 从SharedPreferences读取保存的配置
         String savedWmsUrl = com.qs.qs5502demo.util.PreferenceUtil.getWmsBaseUrl(this);

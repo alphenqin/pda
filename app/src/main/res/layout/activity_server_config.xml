@@ -124,6 +124,17 @@
                 android:background="#2196F3"
                 android:textColor="#FFFFFF" />
         </LinearLayout>
+
+        <!-- 版本信息 -->
+        <TextView
+            android:id="@+id/tvAppVersion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="APP 版本 V--"
+            android:textSize="12sp"
+            android:textColor="#9E9E9E"
+            android:layout_marginTop="16dp"
+            android:gravity="center" />
     </LinearLayout>
 
 </LinearLayout>
