@@ -14,7 +14,6 @@ import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
-import com.qs.qs5502demo.model.PageResponse;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.TaskLockStatus;
@@ -45,8 +44,6 @@ public class ReturnWarehouseActivity extends Activity {
     private String matCode;
     private String inspectionTargetBin;
     private Valve selectedValve;
-    private static final long CALL_PALLET_POLL_INTERVAL_MS = 5000L;
-    private static final long CALL_PALLET_TIMEOUT_MS = 40L * 60L * 1000L;
     private static final String PALLET_TYPE_SMALL = "t1";
     private static final String PALLET_TYPE_LARGE = "t2";
     private static final String SMALL_BUFFER_BIN = "B3-15-01";
@@ -57,6 +54,7 @@ public class ReturnWarehouseActivity extends Activity {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable lockStatusRunnable;
+    private long lastLockStatusErrorAt = 0L;
     private boolean returnCallLocked = false;
     private boolean returnValveLocked = false;
     private boolean callPalletInProgress = false;
@@ -231,25 +229,6 @@ public class ReturnWarehouseActivity extends Activity {
                         return;
                     }
 
-                    String taskNo = result.getOutID() != null ? result.getOutID() : outId;
-                    boolean completed = waitForTaskCompleted(taskNo);
-                    if (!completed) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘未完成", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        callPalletInProgress = false;
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                updateButtonLocks();
-                            }
-                        });
-                        return;
-                    }
-
                     callPalletInProgress = false;
                     runOnUiThread(new Runnable() {
                         @Override
@@ -376,23 +355,6 @@ public class ReturnWarehouseActivity extends Activity {
                         return;
                     }
 
-                    String taskNo = result.getOutID() != null ? result.getOutID() : outId;
-                    boolean completed = waitForTaskCompleted(taskNo);
-                    if (completed) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                updateStatus(true);
-                            }
-                        });
-                    } else {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "样品回库未完成", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
                     valveReturnInProgress = false;
                     runOnUiThread(new Runnable() {
                         @Override
@@ -512,7 +474,16 @@ public class ReturnWarehouseActivity extends Activity {
                         }
                     });
                 } catch (Exception e) {
-                    // Keep current state on error.
+                    long now = System.currentTimeMillis();
+                    if (now - lastLockStatusErrorAt > 30000L) {
+                        lastLockStatusErrorAt = now;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ReturnWarehouseActivity.this, "锁状态刷新失败，请检查网络/服务", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                 }
             }
         }).start();
@@ -543,44 +514,6 @@ public class ReturnWarehouseActivity extends Activity {
         return null;
     }
 
-    private boolean waitForTaskCompleted(String outId) {
-        long deadline = System.currentTimeMillis() + CALL_PALLET_TIMEOUT_MS;
-        while (System.currentTimeMillis() < deadline) {
-            try {
-                Map<String, String> params = new HashMap<>();
-                String today = DateUtil.getCurrentDate();
-                params.put("startDate", today);
-                params.put("endDate", today);
-                params.put("pageNum", "1");
-                params.put("pageSize", "50");
-                params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                PageResponse<Task> pageResponse = wmsApiService.queryTasks(params, ReturnWarehouseActivity.this);
-                if (pageResponse != null && pageResponse.getList() != null) {
-                    for (Task task : pageResponse.getList()) {
-                        if (outId.equals(task.getTaskId())) {
-                            String status = task.getStatus();
-                            if (Task.STATUS_COMPLETED.equals(status)) {
-                                return true;
-                            }
-                            if (Task.STATUS_FAILED.equals(status) || Task.STATUS_CANCELLED.equals(status)) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                // Continue polling until timeout.
-            }
-            try {
-                Thread.sleep(CALL_PALLET_POLL_INTERVAL_MS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return false;
-            }
-        }
-        return false;
-    }
-    
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

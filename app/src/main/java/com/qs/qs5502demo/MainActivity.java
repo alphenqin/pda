@@ -42,6 +42,7 @@ public class MainActivity extends Activity {
 	private Handler handler;
 	private Runnable updateTimeRunnable;
 	private Runnable inboundLockRunnable;
+	private long lastLockStatusErrorAt = 0L;
 	private WmsApiService wmsApiService;
 	private boolean inboundLocked = false;
 	private boolean inspectionLocked = false;
@@ -235,7 +236,16 @@ public class MainActivity extends Activity {
 						}
 					});
 				} catch (Exception e) {
-					// Keep current state on error.
+					long now = System.currentTimeMillis();
+					if (now - lastLockStatusErrorAt > 30000L) {
+						lastLockStatusErrorAt = now;
+						runOnUiThread(new Runnable() {
+							@Override
+							public void run() {
+								Toast.makeText(MainActivity.this, "锁状态刷新失败，请检查网络/服务", Toast.LENGTH_SHORT).show();
+							}
+						});
+					}
 				}
 			}
 		}).start();

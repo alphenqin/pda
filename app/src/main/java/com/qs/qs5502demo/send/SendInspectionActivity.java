@@ -46,6 +46,7 @@ public class SendInspectionActivity extends Activity {
     private Valve selectedValve;
     private Handler handler = new Handler();
     private Runnable inspectionLockRunnable;
+    private long lastLockStatusErrorAt = 0L;
     private boolean inspectionLocked = false;
     private boolean inspectionEmptyReturnLocked = false;
     private CharSequence callSendLabel;
@@ -382,7 +383,16 @@ public class SendInspectionActivity extends Activity {
                         }
                     });
                 } catch (Exception e) {
-                    // Keep current state on error.
+                    long now = System.currentTimeMillis();
+                    if (now - lastLockStatusErrorAt > 30000L) {
+                        lastLockStatusErrorAt = now;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(SendInspectionActivity.this, "锁状态刷新失败，请检查网络/服务", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                 }
             }
         }).start();

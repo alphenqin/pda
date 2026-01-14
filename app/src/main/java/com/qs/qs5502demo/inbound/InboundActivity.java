@@ -59,6 +59,7 @@ public class InboundActivity extends Activity {
     private PalletTypeOption selectedPalletType;
     private Handler handler = new Handler();
     private Runnable inboundLockRunnable;
+    private long lastLockStatusErrorAt = 0L;
     private boolean inboundLocked = false;
     private boolean callInboundInProgress = false;
     private CharSequence callInboundLabel;
@@ -602,7 +603,16 @@ public class InboundActivity extends Activity {
                         }
                     });
                 } catch (Exception e) {
-                    // Keep current state on error.
+                    long now = System.currentTimeMillis();
+                    if (now - lastLockStatusErrorAt > 30000L) {
+                        lastLockStatusErrorAt = now;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(InboundActivity.this, "锁状态刷新失败，请检查网络/服务", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                 }
             }
         }).start();

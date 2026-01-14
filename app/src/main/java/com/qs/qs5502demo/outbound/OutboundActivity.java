@@ -14,7 +14,6 @@ import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
-import com.qs.qs5502demo.model.PageResponse;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.TaskLockStatus;
@@ -23,7 +22,6 @@ import com.qs.qs5502demo.send.SelectValveActivity;
 import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,8 +45,6 @@ public class OutboundActivity extends Activity {
     private String swapStation = "WAREHOUSE_SWAP_1"; // 置换区站点
     private Valve selectedValve;
     private String lastOutboundToBinCode;
-    private static final long OUTBOUND_POLL_INTERVAL_MS = 5000L;
-    private static final long OUTBOUND_TIMEOUT_MS = 40L * 60L * 1000L;
     private static final String PALLET_TYPE_SMALL = "t1";
     private static final String PALLET_TYPE_LARGE = "t2";
     private static final String SMALL_BUFFER_BIN = "B3-15-01";
@@ -61,6 +57,7 @@ public class OutboundActivity extends Activity {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable lockStatusRunnable;
+    private long lastLockStatusErrorAt = 0L;
     private boolean outboundLocked = false;
     private boolean outboundEmptyReturnLocked = false;
     private boolean outboundInProgress = false;
@@ -212,17 +209,6 @@ public class OutboundActivity extends Activity {
                         });
                         return;
                     }
-
-                    String taskNo = result.getOutID() != null ? result.getOutID() : outId;
-                    boolean completed = waitForTaskCompleted(taskNo);
-                    if (!completed) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(OutboundActivity.this, "出库任务未完成", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
                     outboundInProgress = false;
                     runOnUiThread(new Runnable() {
                         @Override
@@ -337,17 +323,6 @@ public class OutboundActivity extends Activity {
                         });
                         return;
                     }
-
-                    String taskNo = result.getOutID() != null ? result.getOutID() : outId;
-                    boolean completed = waitForTaskCompleted(taskNo);
-                    if (!completed) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(OutboundActivity.this, "空托回库未完成", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
                     outboundEmptyReturnInProgress = false;
                     runOnUiThread(new Runnable() {
                         @Override
@@ -461,46 +436,6 @@ public class OutboundActivity extends Activity {
         return "装卸点";
     }
 
-    private boolean waitForTaskCompleted(String outId) {
-        long deadline = System.currentTimeMillis() + OUTBOUND_TIMEOUT_MS;
-        while (System.currentTimeMillis() < deadline) {
-            try {
-                Map<String, String> params = new HashMap<>();
-                long now = System.currentTimeMillis();
-                String startDate = DateUtil.formatDate(new Date(now - 24L * 60L * 60L * 1000L));
-                String endDate = DateUtil.formatDate(new Date(now + 24L * 60L * 60L * 1000L));
-                params.put("startDate", startDate);
-                params.put("endDate", endDate);
-                params.put("pageNum", "1");
-                params.put("pageSize", "50");
-                params.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
-                PageResponse<Task> pageResponse = wmsApiService.queryTasks(params, OutboundActivity.this);
-                if (pageResponse != null && pageResponse.getList() != null) {
-                    for (Task task : pageResponse.getList()) {
-                        if (outId.equals(task.getTaskId())) {
-                            String status = task.getStatus();
-                            if (Task.STATUS_COMPLETED.equals(status)) {
-                                return true;
-                            }
-                            if (Task.STATUS_FAILED.equals(status) || Task.STATUS_CANCELLED.equals(status)) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                // Continue polling until timeout.
-            }
-            try {
-                Thread.sleep(OUTBOUND_POLL_INTERVAL_MS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return false;
-            }
-        }
-        return false;
-    }
-    
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -570,7 +505,16 @@ public class OutboundActivity extends Activity {
                         }
                     });
                 } catch (Exception e) {
-                    // Keep current state on error.
+                    long now = System.currentTimeMillis();
+                    if (now - lastLockStatusErrorAt > 30000L) {
+                        lastLockStatusErrorAt = now;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(OutboundActivity.this, "锁状态刷新失败，请检查网络/服务", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                 }
             }
         }).start();
