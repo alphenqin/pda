@@ -16,6 +16,7 @@ public class Valve implements Serializable {
     private String locationCode;    // 库位号（兼容旧字段）
     private String valveStatus;     // 阀门状态：IN_STOCK/IN_INSPECTION/INSPECTED/OUTBOUND
     private String inspectionTargetBin; // 送检目标站点（如 F1-检测点/F2-检测点/F3-检测点/F4-检测点）
+    private String deviceCode;      // PDA设备编号
 
     public Valve() {
     }
@@ -92,6 +93,14 @@ public class Valve implements Serializable {
 
     public void setInspectionTargetBin(String inspectionTargetBin) {
         this.inspectionTargetBin = inspectionTargetBin;
+    }
+
+    public String getDeviceCode() {
+        return deviceCode;
+    }
+
+    public void setDeviceCode(String deviceCode) {
+        this.deviceCode = deviceCode;
     }
 }
 

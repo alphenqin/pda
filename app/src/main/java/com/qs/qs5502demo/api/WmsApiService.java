@@ -152,6 +152,7 @@ public class WmsApiService {
         
         Map<String, String> request = new HashMap<>();
         request.put("barcode", barcode);
+        request.put("deviceCode", com.qs.qs5502demo.util.PreferenceUtil.getDeviceCode(context));
         
         String json = HttpUtil.toJson(request);
         String response = HttpUtil.post(url, json, context);

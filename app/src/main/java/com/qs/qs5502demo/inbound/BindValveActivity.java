@@ -13,6 +13,7 @@ import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.model.Valve;
 import com.qs.qs5502demo.util.DateUtil;
+import com.qs.qs5502demo.util.PreferenceUtil;
 
 public class BindValveActivity extends Activity {
     
@@ -123,6 +124,7 @@ public class BindValveActivity extends Activity {
         valve.setInboundDate(inboundDate);
         valve.setPalletNo(palletNo);
         valve.setBinCode(binCode);
+        valve.setDeviceCode(PreferenceUtil.getDeviceCode(this));
         // 生成物料编码（可以根据实际规则生成，这里简单处理）
         valve.setMatCode("MAT-" + valveNo);
         
