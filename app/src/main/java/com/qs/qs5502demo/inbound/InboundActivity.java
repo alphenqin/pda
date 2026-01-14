@@ -14,11 +14,11 @@ import android.widget.Toast;
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.model.AvailablePallet;
-import com.qs.qs5502demo.model.InboundLockStatus;
 import com.qs.qs5502demo.model.Pallet;
 import com.qs.qs5502demo.model.PalletTypeOption;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
+import com.qs.qs5502demo.model.TaskLockStatus;
 import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
 import com.qs.qs5502demo.util.ScanHelper;
@@ -237,10 +237,10 @@ public class InboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    InboundLockStatus inboundStatus = wmsApiService.getInboundLockStatus(InboundActivity.this);
-                    InboundLockStatus inspectionStatus = wmsApiService.getInspectionLockStatus(InboundActivity.this);
-                    boolean locked = inboundStatus != null && inboundStatus.isLocked();
-                    boolean inspectionLocked = inspectionStatus != null && inspectionStatus.isLocked();
+                    TaskLockStatus status = wmsApiService.getTaskLockStatus(InboundActivity.this);
+                    boolean locked = status != null && status.isInboundLocked();
+                    boolean inspectionLocked = status != null && status.isInspectionLocked();
+                    boolean inspectionEmptyReturnLocked = status != null && status.isInspectionEmptyReturnLocked();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -249,7 +249,7 @@ public class InboundActivity extends Activity {
                                 Toast.makeText(InboundActivity.this, "入库任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
                                 return;
                             }
-                            if (inspectionLocked) {
+                            if (inspectionLocked || inspectionEmptyReturnLocked) {
                                 Toast.makeText(InboundActivity.this, "送检任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
                                 return;
                             }
@@ -593,8 +593,8 @@ public class InboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    InboundLockStatus status = wmsApiService.getInboundLockStatus(InboundActivity.this);
-                    boolean locked = status != null && status.isLocked();
+                    TaskLockStatus status = wmsApiService.getTaskLockStatus(InboundActivity.this);
+                    boolean locked = status != null && status.isInboundLocked();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {

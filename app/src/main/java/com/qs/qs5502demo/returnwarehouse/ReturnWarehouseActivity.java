@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -15,6 +17,7 @@ import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.model.PageResponse;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
+import com.qs.qs5502demo.model.TaskLockStatus;
 import com.qs.qs5502demo.model.Valve;
 import com.qs.qs5502demo.send.SelectValveActivity;
 import com.qs.qs5502demo.util.DateUtil;
@@ -50,6 +53,14 @@ public class ReturnWarehouseActivity extends Activity {
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
     private static final String LARGE_DOCK_BIN = "D2-大托盘接驳点";
+    private static final long LOCK_POLL_INTERVAL_MS = 5000L;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable lockStatusRunnable;
+    private boolean returnCallLocked = false;
+    private boolean returnValveLocked = false;
+    private boolean callPalletInProgress = false;
+    private boolean valveReturnInProgress = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,11 +126,11 @@ public class ReturnWarehouseActivity extends Activity {
      * 呼叫托盘
      */
     private void callPallet() {
-        if (PreferenceUtil.getReturnCallPalletLock(this)) {
+        if (returnCallLocked || callPalletInProgress) {
             Toast.makeText(this, "呼叫托盘进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (PreferenceUtil.getReturnValveLock(this)) {
+        if (returnValveLocked || valveReturnInProgress) {
             Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -173,7 +184,13 @@ public class ReturnWarehouseActivity extends Activity {
                         });
                         return;
                     }
-                    setReturnCallLock(true);
+                    callPalletInProgress = true;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateButtonLocks();
+                        }
+                    });
 
                     String outId = DateUtil.generateTaskNo("H");
                     Map<String, String> params = new HashMap<>();
@@ -204,7 +221,13 @@ public class ReturnWarehouseActivity extends Activity {
                     });
 
                     if (result == null) {
-                        setReturnCallLock(false);
+                        callPalletInProgress = false;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateButtonLocks();
+                            }
+                        });
                         return;
                     }
 
@@ -217,11 +240,23 @@ public class ReturnWarehouseActivity extends Activity {
                                 Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘未完成", Toast.LENGTH_SHORT).show();
                             }
                         });
-                        setReturnCallLock(false);
+                        callPalletInProgress = false;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateButtonLocks();
+                            }
+                        });
                         return;
                     }
 
-                    setReturnCallLock(false);
+                    callPalletInProgress = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateButtonLocks();
+                        }
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                     runOnUiThread(new Runnable() {
@@ -230,7 +265,13 @@ public class ReturnWarehouseActivity extends Activity {
                             Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
-                    setReturnCallLock(false);
+                    callPalletInProgress = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateButtonLocks();
+                        }
+                    });
                 }
             }
         }).start();
@@ -248,7 +289,7 @@ public class ReturnWarehouseActivity extends Activity {
             Toast.makeText(this, "送检目标站点未设置，请先完成送检", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (PreferenceUtil.getReturnValveLock(this)) {
+        if (returnValveLocked || valveReturnInProgress) {
             Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -286,7 +327,13 @@ public class ReturnWarehouseActivity extends Activity {
                         });
                         return;
                     }
-                    setValveReturnLock(true);
+                    valveReturnInProgress = true;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateButtonLocks();
+                        }
+                    });
 
                     String outId = DateUtil.generateTaskNo("H");
                     Map<String, String> params = new HashMap<>();
@@ -319,7 +366,13 @@ public class ReturnWarehouseActivity extends Activity {
                         }
                     });
                     if (result == null) {
-                        setValveReturnLock(false);
+                        valveReturnInProgress = false;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateButtonLocks();
+                            }
+                        });
                         return;
                     }
 
@@ -340,7 +393,13 @@ public class ReturnWarehouseActivity extends Activity {
                             }
                         });
                     }
-                    setValveReturnLock(false);
+                    valveReturnInProgress = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateButtonLocks();
+                        }
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                     runOnUiThread(new Runnable() {
@@ -349,7 +408,13 @@ public class ReturnWarehouseActivity extends Activity {
                             Toast.makeText(ReturnWarehouseActivity.this, "样品回库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
-                    setValveReturnLock(false);
+                    valveReturnInProgress = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateButtonLocks();
+                        }
+                    });
                 }
             }
         }).start();
@@ -373,30 +438,10 @@ public class ReturnWarehouseActivity extends Activity {
         }
     }
 
-    private void setReturnCallLock(boolean locked) {
-        PreferenceUtil.saveReturnCallPalletLock(this, locked);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                updateButtonLocks();
-            }
-        });
-    }
-
-    private void setValveReturnLock(boolean locked) {
-        PreferenceUtil.saveReturnValveLock(this, locked);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                updateButtonLocks();
-            }
-        });
-    }
-
     private void updateButtonLocks() {
-        boolean callPalletLocked = PreferenceUtil.getReturnCallPalletLock(this);
-        boolean valveReturnLocked = PreferenceUtil.getReturnValveLock(this);
-        boolean callPalletEnabled = !callPalletLocked && !valveReturnLocked;
+        boolean callPalletLocked = returnCallLocked;
+        boolean valveReturnLocked = returnValveLocked;
+        boolean callPalletEnabled = !callPalletLocked && !valveReturnLocked && !callPalletInProgress;
         btnCallPallet.setEnabled(callPalletEnabled);
         if (callPalletEnabled) {
             btnCallPallet.setAlpha(1.0f);
@@ -405,12 +450,14 @@ public class ReturnWarehouseActivity extends Activity {
             btnCallPallet.setAlpha(0.4f);
             if (valveReturnLocked) {
                 btnCallPallet.setText(callPalletLabel + "（样品回库中）");
+            } else if (callPalletInProgress) {
+                btnCallPallet.setText(callPalletLabel + "（处理中）");
             } else {
                 btnCallPallet.setText(callPalletLabel + "（呼叫托盘中）");
             }
         }
 
-        boolean valveReturnEnabled = !callPalletLocked && !valveReturnLocked;
+        boolean valveReturnEnabled = !callPalletLocked && !valveReturnLocked && !valveReturnInProgress;
         btnValveReturn.setEnabled(valveReturnEnabled);
         if (valveReturnEnabled) {
             btnValveReturn.setAlpha(1.0f);
@@ -419,10 +466,56 @@ public class ReturnWarehouseActivity extends Activity {
             btnValveReturn.setAlpha(0.4f);
             if (valveReturnLocked) {
                 btnValveReturn.setText(valveReturnLabel + "（回库中）");
+            } else if (valveReturnInProgress) {
+                btnValveReturn.setText(valveReturnLabel + "（处理中）");
             } else {
                 btnValveReturn.setText(valveReturnLabel + "（呼叫托盘中）");
             }
         }
+    }
+
+    private void startLockStatusPolling() {
+        if (lockStatusRunnable != null) {
+            return;
+        }
+        lockStatusRunnable = new Runnable() {
+            @Override
+            public void run() {
+                refreshLockStatus();
+                handler.postDelayed(this, LOCK_POLL_INTERVAL_MS);
+            }
+        };
+        handler.post(lockStatusRunnable);
+    }
+
+    private void stopLockStatusPolling() {
+        if (lockStatusRunnable != null) {
+            handler.removeCallbacks(lockStatusRunnable);
+            lockStatusRunnable = null;
+        }
+    }
+
+    private void refreshLockStatus() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    TaskLockStatus status = wmsApiService.getTaskLockStatus(ReturnWarehouseActivity.this);
+                    boolean callLocked = status != null && status.isReturnCallLocked();
+                    boolean valveLocked = status != null && status.isReturnValveLocked();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            returnCallLocked = callLocked;
+                            returnValveLocked = valveLocked;
+                            updateButtonLocks();
+                        }
+                    });
+                } catch (Exception e) {
+                    // Keep current state on error.
+                }
+            }
+        }).start();
     }
 
     private String resolvePalletTypeCode(String palletNo) {
@@ -510,7 +603,13 @@ public class ReturnWarehouseActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        updateButtonLocks();
+        startLockStatusPolling();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopLockStatusPolling();
     }
 }
 

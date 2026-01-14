@@ -13,9 +13,9 @@ import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
-import com.qs.qs5502demo.model.InboundLockStatus;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
+import com.qs.qs5502demo.model.TaskLockStatus;
 import com.qs.qs5502demo.model.Valve;
 import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
@@ -47,6 +47,7 @@ public class SendInspectionActivity extends Activity {
     private Handler handler = new Handler();
     private Runnable inspectionLockRunnable;
     private boolean inspectionLocked = false;
+    private boolean inspectionEmptyReturnLocked = false;
     private CharSequence callSendLabel;
     private CharSequence emptyReturnLabel;
     private boolean callSendInProgress = false;
@@ -208,7 +209,7 @@ public class SendInspectionActivity extends Activity {
                             } else {
                                 Toast.makeText(SendInspectionActivity.this, "呼叫送检失败", Toast.LENGTH_SHORT).show();
                             }
-                            applyInspectionLock(inspectionLocked);
+                            applyInspectionLock(inspectionLocked, inspectionEmptyReturnLocked);
                         }
                     });
                 } catch (Exception e) {
@@ -218,7 +219,7 @@ public class SendInspectionActivity extends Activity {
                         public void run() {
                             callSendInProgress = false;
                             Toast.makeText(SendInspectionActivity.this, "呼叫送检失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            applyInspectionLock(inspectionLocked);
+                            applyInspectionLock(inspectionLocked, inspectionEmptyReturnLocked);
                         }
                     });
                 }
@@ -297,7 +298,7 @@ public class SendInspectionActivity extends Activity {
                             } else {
                                 Toast.makeText(SendInspectionActivity.this, "空托回库失败", Toast.LENGTH_SHORT).show();
                             }
-                            applyInspectionLock(inspectionLocked);
+                            applyInspectionLock(inspectionLocked, inspectionEmptyReturnLocked);
                         }
                     });
                 } catch (Exception e) {
@@ -307,7 +308,7 @@ public class SendInspectionActivity extends Activity {
                         public void run() {
                             emptyReturnInProgress = false;
                             Toast.makeText(SendInspectionActivity.this, "空托回库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            applyInspectionLock(inspectionLocked);
+                            applyInspectionLock(inspectionLocked, inspectionEmptyReturnLocked);
                         }
                     });
                 }
@@ -371,12 +372,13 @@ public class SendInspectionActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    InboundLockStatus status = wmsApiService.getInspectionLockStatus(SendInspectionActivity.this);
-                    boolean locked = status != null && status.isLocked();
+                    TaskLockStatus status = wmsApiService.getTaskLockStatus(SendInspectionActivity.this);
+                    boolean locked = status != null && status.isInspectionLocked();
+                    boolean emptyReturnLocked = status != null && status.isInspectionEmptyReturnLocked();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            applyInspectionLock(locked);
+                            applyInspectionLock(locked, emptyReturnLocked);
                         }
                     });
                 } catch (Exception e) {
@@ -386,8 +388,9 @@ public class SendInspectionActivity extends Activity {
         }).start();
     }
 
-    private void applyInspectionLock(boolean locked) {
+    private void applyInspectionLock(boolean locked, boolean emptyReturnLocked) {
         inspectionLocked = locked;
+        inspectionEmptyReturnLocked = emptyReturnLocked;
         boolean callSendEnabled = !inspectionLocked && !callSendInProgress;
         btnCallSend.setEnabled(callSendEnabled);
         if (callSendEnabled) {
@@ -398,14 +401,20 @@ public class SendInspectionActivity extends Activity {
             btnCallSend.setText(callSendLabel + (inspectionLocked ? "（送检锁定）" : "（处理中）"));
         }
 
-        boolean emptyReturnEnabled = !inspectionLocked && !emptyReturnInProgress;
+        boolean emptyReturnEnabled = !inspectionLocked && !inspectionEmptyReturnLocked && !emptyReturnInProgress;
         btnEmptyPalletReturn.setEnabled(emptyReturnEnabled);
         if (emptyReturnEnabled) {
             btnEmptyPalletReturn.setAlpha(1.0f);
             btnEmptyPalletReturn.setText(emptyReturnLabel);
         } else {
             btnEmptyPalletReturn.setAlpha(0.4f);
-            btnEmptyPalletReturn.setText(emptyReturnLabel + (inspectionLocked ? "（送检锁定）" : "（处理中）"));
+            if (inspectionLocked) {
+                btnEmptyPalletReturn.setText(emptyReturnLabel + "（送检锁定）");
+            } else if (inspectionEmptyReturnLocked) {
+                btnEmptyPalletReturn.setText(emptyReturnLabel + "（空托回库中）");
+            } else {
+                btnEmptyPalletReturn.setText(emptyReturnLabel + "（处理中）");
+            }
         }
     }
     

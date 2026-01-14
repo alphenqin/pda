@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -15,6 +17,7 @@ import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.model.PageResponse;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
+import com.qs.qs5502demo.model.TaskLockStatus;
 import com.qs.qs5502demo.model.Valve;
 import com.qs.qs5502demo.send.SelectValveActivity;
 import com.qs.qs5502demo.util.DateUtil;
@@ -54,6 +57,14 @@ public class OutboundActivity extends Activity {
     private static final String LARGE_DOCK_BIN = "D2-大托盘接驳点";
     private static final String SMALL_OUTBOUND_RETURN_START = "Z3-装卸点";
     private static final String LARGE_OUTBOUND_RETURN_START = "Z4-装卸点";
+    private static final long LOCK_POLL_INTERVAL_MS = 5000L;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable lockStatusRunnable;
+    private boolean outboundLocked = false;
+    private boolean outboundEmptyReturnLocked = false;
+    private boolean outboundInProgress = false;
+    private boolean outboundEmptyReturnInProgress = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,11 +130,11 @@ public class OutboundActivity extends Activity {
      * 呼叫出库
      */
     private void callOutbound() {
-        if (PreferenceUtil.getOutboundLock(this)) {
+        if (outboundLocked || outboundInProgress) {
             Toast.makeText(this, "出库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (PreferenceUtil.getOutboundEmptyReturnLock(this)) {
+        if (outboundEmptyReturnLocked || outboundEmptyReturnInProgress) {
             Toast.makeText(this, "空托回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -157,7 +168,13 @@ public class OutboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    setOutboundLock(true);
+                    outboundInProgress = true;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateOutboundLockUi();
+                        }
+                    });
                     String outId = DateUtil.generateTaskNo("C");
                     Map<String, String> params = new HashMap<>();
                     params.put("taskType", Task.TYPE_OUTBOUND);
@@ -186,7 +203,13 @@ public class OutboundActivity extends Activity {
                         }
                     });
                     if (result == null) {
-                        setOutboundLock(false);
+                        outboundInProgress = false;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateOutboundLockUi();
+                            }
+                        });
                         return;
                     }
 
@@ -200,7 +223,13 @@ public class OutboundActivity extends Activity {
                             }
                         });
                     }
-                    setOutboundLock(false);
+                    outboundInProgress = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateOutboundLockUi();
+                        }
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                     runOnUiThread(new Runnable() {
@@ -209,7 +238,13 @@ public class OutboundActivity extends Activity {
                             Toast.makeText(OutboundActivity.this, "呼叫出库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
-                    setOutboundLock(false);
+                    outboundInProgress = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateOutboundLockUi();
+                        }
+                    });
                 }
             }
         }).start();
@@ -223,11 +258,11 @@ public class OutboundActivity extends Activity {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (PreferenceUtil.getOutboundEmptyReturnLock(this)) {
+        if (outboundEmptyReturnLocked || outboundEmptyReturnInProgress) {
             Toast.makeText(this, "空托回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (PreferenceUtil.getOutboundLock(this)) {
+        if (outboundLocked || outboundInProgress) {
             Toast.makeText(this, "出库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -259,7 +294,13 @@ public class OutboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    setOutboundEmptyReturnLock(true);
+                    outboundEmptyReturnInProgress = true;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateOutboundLockUi();
+                        }
+                    });
                     String outId = DateUtil.generateTaskNo("H");
                     Map<String, String> params = new HashMap<>();
                     params.put("taskType", Task.TYPE_RETURN);
@@ -287,7 +328,13 @@ public class OutboundActivity extends Activity {
                         }
                     });
                     if (result == null) {
-                        setOutboundEmptyReturnLock(false);
+                        outboundEmptyReturnInProgress = false;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateOutboundLockUi();
+                            }
+                        });
                         return;
                     }
 
@@ -301,7 +348,13 @@ public class OutboundActivity extends Activity {
                             }
                         });
                     }
-                    setOutboundEmptyReturnLock(false);
+                    outboundEmptyReturnInProgress = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateOutboundLockUi();
+                        }
+                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                     runOnUiThread(new Runnable() {
@@ -310,7 +363,13 @@ public class OutboundActivity extends Activity {
                             Toast.makeText(OutboundActivity.this, "空托回库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
-                    setOutboundEmptyReturnLock(false);
+                    outboundEmptyReturnInProgress = false;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateOutboundLockUi();
+                        }
+                    });
                 }
             }
         }).start();
@@ -334,44 +393,24 @@ public class OutboundActivity extends Activity {
         }
     }
 
-    private void setOutboundLock(boolean locked) {
-        PreferenceUtil.saveOutboundLock(this, locked);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                updateOutboundLockUi();
-            }
-        });
-    }
-
     private void updateOutboundLockUi() {
         updateOutboundEmptyReturnLockUi();
     }
 
-    private void setOutboundEmptyReturnLock(boolean locked) {
-        PreferenceUtil.saveOutboundEmptyReturnLock(this, locked);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                updateOutboundEmptyReturnLockUi();
-            }
-        });
-    }
-
     private void updateOutboundEmptyReturnLockUi() {
-        boolean locked = PreferenceUtil.getOutboundEmptyReturnLock(this);
-        boolean outboundLocked = PreferenceUtil.getOutboundLock(this);
-        boolean callOutboundEnabled = !locked && !outboundLocked;
+        boolean locked = outboundEmptyReturnLocked || outboundEmptyReturnInProgress;
+        boolean outboundLockedLocal = outboundLocked || outboundInProgress;
+        boolean callOutboundEnabled = !locked && !outboundLockedLocal;
         btnCallOutbound.setEnabled(callOutboundEnabled);
         if (callOutboundEnabled) {
             btnCallOutbound.setAlpha(1.0f);
             btnCallOutbound.setText(callOutboundLabel);
         } else {
             btnCallOutbound.setAlpha(0.4f);
-            btnCallOutbound.setText(callOutboundLabel + (outboundLocked ? "（出库中）" : "（空托回库中）"));
+            btnCallOutbound.setText(callOutboundLabel + (outboundLockedLocal ? "（出库中）" : "（空托回库中）"));
         }
 
-        boolean emptyReturnEnabled = !locked && !outboundLocked;
+        boolean emptyReturnEnabled = !locked && !outboundLockedLocal;
         btnEmptyPalletReturn.setEnabled(emptyReturnEnabled);
         if (emptyReturnEnabled) {
             btnEmptyPalletReturn.setAlpha(1.0f);
@@ -484,8 +523,57 @@ public class OutboundActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        updateOutboundLockUi();
-        updateOutboundEmptyReturnLockUi();
+        startLockStatusPolling();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopLockStatusPolling();
+    }
+
+    private void startLockStatusPolling() {
+        if (lockStatusRunnable != null) {
+            return;
+        }
+        lockStatusRunnable = new Runnable() {
+            @Override
+            public void run() {
+                refreshLockStatus();
+                handler.postDelayed(this, LOCK_POLL_INTERVAL_MS);
+            }
+        };
+        handler.post(lockStatusRunnable);
+    }
+
+    private void stopLockStatusPolling() {
+        if (lockStatusRunnable != null) {
+            handler.removeCallbacks(lockStatusRunnable);
+            lockStatusRunnable = null;
+        }
+    }
+
+    private void refreshLockStatus() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    TaskLockStatus status = wmsApiService.getTaskLockStatus(OutboundActivity.this);
+                    boolean outbound = status != null && status.isOutboundLocked();
+                    boolean outboundEmpty = status != null && status.isOutboundEmptyReturnLocked();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            outboundLocked = outbound;
+                            outboundEmptyReturnLocked = outboundEmpty;
+                            updateOutboundLockUi();
+                        }
+                    });
+                } catch (Exception e) {
+                    // Keep current state on error.
+                }
+            }
+        }).start();
     }
 }
 

@@ -7,7 +7,6 @@ import com.google.gson.reflect.TypeToken;
 import com.qs.qs5502demo.model.ApiResponse;
 import com.qs.qs5502demo.model.AvailableBin;
 import com.qs.qs5502demo.model.AvailablePallet;
-import com.qs.qs5502demo.model.InboundLockStatus;
 import com.qs.qs5502demo.model.LoginRequest;
 import com.qs.qs5502demo.model.LoginResponse;
 import com.qs.qs5502demo.model.PalletScanConfig;
@@ -18,6 +17,7 @@ import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.Valve;
 import com.qs.qs5502demo.model.AgvInfo;
+import com.qs.qs5502demo.model.TaskLockStatus;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -282,31 +282,14 @@ public class WmsApiService {
     }
 
     /**
-     * 查询入库锁定状态（全局）
+     * 查询任务锁定状态（统一入口）
      */
-    public InboundLockStatus getInboundLockStatus(Context context) throws IOException {
-        String url = getBaseUrl() + "/task/inbound/lock";
+    public TaskLockStatus getTaskLockStatus(Context context) throws IOException {
+        String url = getBaseUrl() + "/task/lock/status";
         String response = HttpUtil.post(url, "{}", context);
 
-        Type type = new TypeToken<ApiResponse<InboundLockStatus>>(){}.getType();
-        ApiResponse<InboundLockStatus> apiResponse = HttpUtil.fromJson(response, type);
-
-        if (apiResponse.isSuccess() && apiResponse.getData() != null) {
-            return apiResponse.getData();
-        } else {
-            throw new IOException(apiResponse.getMessage());
-        }
-    }
-
-    /**
-     * 查询送检锁定状态（全局）
-     */
-    public InboundLockStatus getInspectionLockStatus(Context context) throws IOException {
-        String url = getBaseUrl() + "/task/inspection/lock";
-        String response = HttpUtil.post(url, "{}", context);
-
-        Type type = new TypeToken<ApiResponse<InboundLockStatus>>(){}.getType();
-        ApiResponse<InboundLockStatus> apiResponse = HttpUtil.fromJson(response, type);
+        Type type = new TypeToken<ApiResponse<TaskLockStatus>>(){}.getType();
+        ApiResponse<TaskLockStatus> apiResponse = HttpUtil.fromJson(response, type);
 
         if (apiResponse.isSuccess() && apiResponse.getData() != null) {
             return apiResponse.getData();
