@@ -4,10 +4,12 @@ Thumbs.db
 
 # Logs
 *.log
+*.class
 
 # Gradle / build outputs
 .gradle/
 **/build/
+**/target/
 
 # Android / Android Studio
 *.apk
