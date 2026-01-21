@@ -59,7 +59,7 @@ public class LoginActivity extends Activity {
         
         // 设置默认值
         etUsername.setText("admin");
-        etPassword.setText("admin123");
+        etPassword.setText("111111");
         etDeviceCode.setText("PDA-01");
     }
     
@@ -175,7 +175,10 @@ public class LoginActivity extends Activity {
             startMainActivity();
         } else {
             // 登录失败
-            String message = response != null ? response.getMessage() : "登录失败";
+            String message = response != null ? response.getMessage() : null;
+            if (message == null || message.trim().isEmpty()) {
+                message = "用户名或密码错误";
+            }
             showError(message);
         }
     }
@@ -187,8 +190,10 @@ public class LoginActivity extends Activity {
     }
     
     private void showError(String message) {
-        tvError.setText(message);
+        String safeMessage = (message == null || message.trim().isEmpty()) ? "登录失败" : message;
+        tvError.setText(safeMessage);
         tvError.setVisibility(View.VISIBLE);
+        Toast.makeText(this, safeMessage, Toast.LENGTH_SHORT).show();
     }
     
     private void hideError() {
