@@ -3,6 +3,8 @@ package com.qs.qs5502demo.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.qs.qs5502demo.model.Valve;
+
 /**
  * SharedPreferences工具类，用于保存和读取用户信息、token等
  */
@@ -21,6 +23,12 @@ public class PreferenceUtil {
     private static final String KEY_RETURN_VALVE_LOCK = "return_valve_lock";
     private static final String KEY_OUTBOUND_LOCK = "outbound_lock";
     private static final String KEY_OUTBOUND_EMPTY_RETURN_LOCK = "outbound_empty_return_lock";
+    private static final String KEY_SEND_INSPECTION_VALVE_NO = "send_inspection_valve_no";
+    private static final String KEY_SEND_INSPECTION_PALLET_NO = "send_inspection_pallet_no";
+    private static final String KEY_SEND_INSPECTION_BIN_CODE = "send_inspection_bin_code";
+    private static final String KEY_SEND_INSPECTION_MAT_CODE = "send_inspection_mat_code";
+    private static final String KEY_SEND_INSPECTION_VENDOR_NAME = "send_inspection_vendor_name";
+    private static final String KEY_SEND_INSPECTION_INBOUND_DATE = "send_inspection_inbound_date";
     
     /**
      * 保存Token
@@ -204,6 +212,63 @@ public class PreferenceUtil {
     public static boolean getOutboundEmptyReturnLock(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         return prefs.getBoolean(KEY_OUTBOUND_EMPTY_RETURN_LOCK, false);
+    }
+
+    /**
+     * 保存最近一次送检页面选中的样品信息
+     */
+    public static void saveLastSendInspectionValve(Context context, Valve valve) {
+        if (context == null || valve == null) {
+            return;
+        }
+        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        prefs.edit()
+            .putString(KEY_SEND_INSPECTION_VALVE_NO, valve.getValveNo())
+            .putString(KEY_SEND_INSPECTION_PALLET_NO, valve.getPalletNo())
+            .putString(KEY_SEND_INSPECTION_BIN_CODE, valve.getBinCode())
+            .putString(KEY_SEND_INSPECTION_MAT_CODE, valve.getMatCode())
+            .putString(KEY_SEND_INSPECTION_VENDOR_NAME, valve.getVendorName())
+            .putString(KEY_SEND_INSPECTION_INBOUND_DATE, valve.getInboundDate())
+            .apply();
+    }
+
+    /**
+     * 读取最近一次送检页面选中的样品信息
+     */
+    public static Valve getLastSendInspectionValve(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        String palletNo = prefs.getString(KEY_SEND_INSPECTION_PALLET_NO, null);
+        String binCode = prefs.getString(KEY_SEND_INSPECTION_BIN_CODE, null);
+        if (isBlank(palletNo) && isBlank(binCode)) {
+            return null;
+        }
+        Valve valve = new Valve();
+        valve.setValveNo(prefs.getString(KEY_SEND_INSPECTION_VALVE_NO, null));
+        valve.setPalletNo(palletNo);
+        valve.setBinCode(binCode);
+        valve.setMatCode(prefs.getString(KEY_SEND_INSPECTION_MAT_CODE, null));
+        valve.setVendorName(prefs.getString(KEY_SEND_INSPECTION_VENDOR_NAME, null));
+        valve.setInboundDate(prefs.getString(KEY_SEND_INSPECTION_INBOUND_DATE, null));
+        return valve;
+    }
+
+    /**
+     * 清理最近一次送检页面选中的样品信息
+     */
+    public static void clearLastSendInspectionValve(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        prefs.edit()
+            .remove(KEY_SEND_INSPECTION_VALVE_NO)
+            .remove(KEY_SEND_INSPECTION_PALLET_NO)
+            .remove(KEY_SEND_INSPECTION_BIN_CODE)
+            .remove(KEY_SEND_INSPECTION_MAT_CODE)
+            .remove(KEY_SEND_INSPECTION_VENDOR_NAME)
+            .remove(KEY_SEND_INSPECTION_INBOUND_DATE)
+            .apply();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
     
     /**

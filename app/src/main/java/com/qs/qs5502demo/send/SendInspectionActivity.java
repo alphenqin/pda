@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
+import com.qs.qs5502demo.model.PageResponse;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.TaskLockStatus;
@@ -20,7 +21,12 @@ import com.qs.qs5502demo.model.Valve;
 import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class SendInspectionActivity extends Activity {
@@ -78,6 +84,7 @@ public class SendInspectionActivity extends Activity {
         emptyReturnLabel = btnEmptyPalletReturn.getText();
         
         updateStatus(false);
+        restoreSelectedValve();
         refreshInspectionLockStatus();
     }
     
@@ -204,6 +211,7 @@ public class SendInspectionActivity extends Activity {
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 updateStatus(true);
+                                persistSelectedValve();
                                 Toast.makeText(SendInspectionActivity.this, 
                                     "呼叫送检成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
@@ -293,6 +301,7 @@ public class SendInspectionActivity extends Activity {
                             emptyReturnInProgress = false;
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
+                                PreferenceUtil.clearLastSendInspectionValve(SendInspectionActivity.this);
                                 Toast.makeText(SendInspectionActivity.this, 
                                     "空托回库成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
@@ -427,22 +436,127 @@ public class SendInspectionActivity extends Activity {
             }
         }
     }
+
+    private void restoreSelectedValve() {
+        Valve cachedValve = PreferenceUtil.getLastSendInspectionValve(this);
+        if (cachedValve != null) {
+            applySelectedValve(cachedValve);
+            Toast.makeText(this, "已恢复上次送检样品", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        recoverFromRecentSendInspectionTask();
+    }
+
+    private void recoverFromRecentSendInspectionTask() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Map<String, String> params = new HashMap<>();
+                    params.put("taskType", Task.TYPE_SEND_INSPECTION);
+                    params.put("pageNum", "1");
+                    params.put("pageSize", "50");
+                    String deviceCode = PreferenceUtil.getDeviceCode(SendInspectionActivity.this);
+                    if (deviceCode != null && !deviceCode.isEmpty()) {
+                        params.put("deviceCode", deviceCode);
+                    }
+                    PageResponse<Task> pageResponse = wmsApiService.queryTasks(params, SendInspectionActivity.this);
+                    Task latestTask = selectLatestTask(pageResponse != null ? pageResponse.getList() : null);
+                    if (latestTask == null) {
+                        return;
+                    }
+                    String latestPalletNo = latestTask.getPalletNo();
+                    String latestBinCode = latestTask.getBinCode();
+                    if ((latestPalletNo == null || latestPalletNo.isEmpty())
+                        && (latestBinCode == null || latestBinCode.isEmpty())) {
+                        return;
+                    }
+                    Valve valve = new Valve();
+                    valve.setValveNo(latestTask.getValveNo());
+                    valve.setPalletNo(latestPalletNo);
+                    valve.setBinCode(latestBinCode);
+                    valve.setMatCode(latestTask.getMatCode());
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            applySelectedValve(valve);
+                            persistSelectedValve();
+                            Toast.makeText(SendInspectionActivity.this, "已从最近送检任务恢复样品", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } catch (Exception ignored) {
+                    // 恢复失败时静默处理，不阻断主流程
+                }
+            }
+        }).start();
+    }
+
+    private Task selectLatestTask(List<Task> tasks) {
+        if (tasks == null || tasks.isEmpty()) {
+            return null;
+        }
+        Task latest = null;
+        long latestTime = Long.MIN_VALUE;
+        for (Task task : tasks) {
+            if (task == null || !Task.TYPE_SEND_INSPECTION.equals(task.getTaskType())) {
+                continue;
+            }
+            long taskTime = parseTaskCreateTime(task.getCreateTime());
+            if (latest == null || taskTime > latestTime) {
+                latest = task;
+                latestTime = taskTime;
+            }
+        }
+        return latest;
+    }
+
+    private long parseTaskCreateTime(String time) {
+        if (time == null || time.trim().isEmpty()) {
+            return Long.MIN_VALUE;
+        }
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            Date date = sdf.parse(time);
+            return date != null ? date.getTime() : Long.MIN_VALUE;
+        } catch (ParseException e) {
+            return Long.MIN_VALUE;
+        }
+    }
+
+    private void applySelectedValve(Valve valve) {
+        selectedValve = valve;
+        if (selectedValve == null) {
+            palletNo = null;
+            binCode = null;
+            matCode = null;
+            tvPalletNo.setText("--");
+            tvLocationCode.setText("--");
+            updateStatus(false);
+            return;
+        }
+        palletNo = selectedValve.getPalletNo();
+        binCode = selectedValve.getBinCode();
+        matCode = selectedValve.getMatCode();
+        tvPalletNo.setText(palletNo != null && !palletNo.isEmpty() ? palletNo : "--");
+        tvLocationCode.setText(binCode != null && !binCode.isEmpty() ? binCode : "--");
+        updateStatus((palletNo != null && !palletNo.isEmpty()) || (binCode != null && !binCode.isEmpty()));
+    }
+
+    private void persistSelectedValve() {
+        if (selectedValve == null) {
+            return;
+        }
+        PreferenceUtil.saveLastSendInspectionValve(this, selectedValve);
+    }
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 200 && resultCode == RESULT_OK && data != null) {
             // 获取选中的阀门信息
-            selectedValve = (Valve) data.getSerializableExtra("valve");
-            if (selectedValve != null) {
-                palletNo = selectedValve.getPalletNo();
-                binCode = selectedValve.getBinCode();
-                matCode = selectedValve.getMatCode();
-                
-                tvPalletNo.setText(palletNo);
-                tvLocationCode.setText(binCode);
-                updateStatus(true);
-            }
+            Valve valve = (Valve) data.getSerializableExtra("valve");
+            applySelectedValve(valve);
+            persistSelectedValve();
         }
     }
 }
