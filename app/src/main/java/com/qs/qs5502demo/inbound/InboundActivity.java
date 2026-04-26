@@ -30,17 +30,22 @@ import java.util.Map;
 
 public class InboundActivity extends Activity {
 
-    private static final String DEFAULT_SWAP_STATION = "WAREHOUSE_SWAP_1";
     private static final long INBOUND_LOCK_POLL_MS = 5000L;
+    private static final String SMALL_LOAD_BIN_1 = "Z1-装卸点";
+    private static final String SMALL_LOAD_BIN_2 = "Z2-装卸点";
+    private static final String SMALL_LOAD_BIN_3 = "Z3-装卸点";
+    private static final String LARGE_LOAD_BIN = "Z4-装卸点";
 
     private TextView tvPalletNo;
     private TextView tvLocationCode;
+    private TextView tvInboundStation;
     private View viewStatus;
     private View layoutScanPallet;
     private View layoutManualBin;
     private Button btnScanPallet;
     private Button btnPickBin;
     private Button btnBindValve;
+    private Button btnSelectInboundStation;
     private Button btnCallInbound;
     private Button btnBack;
     private TextView tvPalletType;
@@ -80,12 +85,14 @@ public class InboundActivity extends Activity {
     private void initViews() {
         tvPalletNo = (TextView) findViewById(R.id.tvPalletNo);
         tvLocationCode = (TextView) findViewById(R.id.tvLocationCode);
+        tvInboundStation = (TextView) findViewById(R.id.tvInboundStation);
         viewStatus = findViewById(R.id.viewStatus);
         layoutScanPallet = findViewById(R.id.layoutScanPallet);
         layoutManualBin = findViewById(R.id.layoutManualBin);
         btnScanPallet = (Button) findViewById(R.id.btnScanPallet);
         btnPickBin = (Button) findViewById(R.id.btnPickBin);
         btnBindValve = (Button) findViewById(R.id.btnBindValve);
+        btnSelectInboundStation = (Button) findViewById(R.id.btnSelectInboundStation);
         btnCallInbound = (Button) findViewById(R.id.btnCallInbound);
         btnBack = (Button) findViewById(R.id.btnBack);
         tvPalletType = (TextView) findViewById(R.id.tvPalletType);
@@ -138,6 +145,13 @@ public class InboundActivity extends Activity {
                 startActivityForResult(intent, 100);
             }
         });
+
+        btnSelectInboundStation.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showInboundStationDialog();
+            }
+        });
         
         btnCallInbound.setOnClickListener(new OnClickListener() {
             @Override
@@ -188,8 +202,8 @@ public class InboundActivity extends Activity {
                             if (pallet != null) {
                                 palletNo = pallet.getPalletNo();
                                 binCode = pallet.getBinCode();
-                                swapStation = pallet.getSwapStation();
                                 palletType = pallet.getPalletType();
+                                applyPalletTypeDefaults();
                                 
                                 tvPalletNo.setText(palletNo);
                                 tvLocationCode.setText(binCode);
@@ -229,51 +243,18 @@ public class InboundActivity extends Activity {
             return;
         }
 
-        checkInboundLockAndConfirm();
-    }
+        if (swapStation == null || swapStation.isEmpty()) {
+            Toast.makeText(this, "请先选择入库站点", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-    private void checkInboundLockAndConfirm() {
-        Toast.makeText(this, "正在检查入库状态...", Toast.LENGTH_SHORT).show();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    TaskLockStatus status = wmsApiService.getTaskLockStatus(InboundActivity.this);
-                    boolean locked = status != null && status.isInboundLocked();
-                    boolean inspectionLocked = status != null && status.isInspectionLocked();
-                    boolean inspectionEmptyReturnLocked = status != null && status.isInspectionEmptyReturnLocked();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            applyInboundLock(locked);
-                            if (locked) {
-                                Toast.makeText(InboundActivity.this, "入库任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                            if (inspectionLocked || inspectionEmptyReturnLocked) {
-                                Toast.makeText(InboundActivity.this, "送检任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                            showInboundConfirmDialog();
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(InboundActivity.this, "入库状态检查失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            }
-        }).start();
+        showInboundConfirmDialog();
     }
 
     private void showInboundConfirmDialog() {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫入库")
-            .setMessage("托盘号：" + palletNo + "\n库位号：" + binCode)
+            .setMessage("托盘号：" + palletNo + "\n库位号：" + binCode + "\n入库站点：" + swapStation)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -329,8 +310,8 @@ public class InboundActivity extends Activity {
                             }
                             palletNo = availablePallet.getPalletNo();
                             binCode = availablePallet.getBinCode();
-                            swapStation = DEFAULT_SWAP_STATION;
                             palletType = palletTypeOption.getTypeCode();
+                            applyPalletTypeDefaults();
                             tvPalletNo.setText(palletNo);
                             tvLocationCode.setText(binCode);
                             updateStatus(true);
@@ -437,6 +418,8 @@ public class InboundActivity extends Activity {
         selectedPalletType = option;
         if (option == null) {
             tvPalletType.setText("未选择");
+            palletType = null;
+            updateInboundStationSelection(null);
             return;
         }
         String label = option.getTypeName() != null ? option.getTypeName() : "";
@@ -444,10 +427,12 @@ public class InboundActivity extends Activity {
             label = option.getTypeCode() != null ? option.getTypeCode() : "";
         }
         tvPalletType.setText(label.isEmpty() ? "未命名" : label);
+        palletType = option.getTypeCode();
         palletNo = null;
         binCode = null;
         tvPalletNo.setText("--");
         tvLocationCode.setText("--");
+        applyPalletTypeDefaults();
         updateStatus(false);
     }
     
@@ -460,9 +445,7 @@ public class InboundActivity extends Activity {
             return;
         }
         callInboundInProgress = true;
-        btnCallInbound.setEnabled(false);
-        btnCallInbound.setAlpha(0.4f);
-        btnCallInbound.setText(callInboundLabel + "（处理中）");
+        refreshCallInboundButtonState();
         // 显示加载提示
         Toast.makeText(this, "正在创建入库任务...", Toast.LENGTH_SHORT).show();
         
@@ -494,14 +477,14 @@ public class InboundActivity extends Activity {
                             callInboundInProgress = false;
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
-                                updateStatus(true);
+                                resetInboundFormAfterQueue();
                                 Toast.makeText(InboundActivity.this, 
-                                    "呼叫入库成功，任务号：" + taskNo, 
+                                    "入库任务已加入队列，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(InboundActivity.this, "呼叫入库失败", Toast.LENGTH_SHORT).show();
                             }
-                            applyInboundLock(inboundLocked);
+                            refreshCallInboundButtonState();
                         }
                     });
                 } catch (Exception e) {
@@ -511,7 +494,7 @@ public class InboundActivity extends Activity {
                         public void run() {
                             callInboundInProgress = false;
                             Toast.makeText(InboundActivity.this, "呼叫入库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            applyInboundLock(inboundLocked);
+                            refreshCallInboundButtonState();
                         }
                     });
                 }
@@ -528,6 +511,113 @@ public class InboundActivity extends Activity {
         } else {
             viewStatus.setBackgroundColor(0xFFCCCCCC);  // 灰色
         }
+    }
+
+    private void resetInboundFormAfterQueue() {
+        isValveBound = false;
+        matCode = null;
+        palletNo = null;
+        binCode = null;
+        tvPalletNo.setText("--");
+        tvLocationCode.setText("--");
+        if (isPalletScanEnabled) {
+            palletType = null;
+            updateInboundStationSelection(null);
+        }
+        updateStatus(false);
+    }
+
+    private void refreshCallInboundButtonState() {
+        btnCallInbound.setEnabled(!callInboundInProgress);
+        if (callInboundInProgress) {
+            btnCallInbound.setAlpha(0.4f);
+            btnCallInbound.setText(callInboundLabel + "（处理中）");
+        } else {
+            btnCallInbound.setAlpha(1.0f);
+            btnCallInbound.setText(callInboundLabel);
+        }
+    }
+
+    private void showInboundStationDialog() {
+        String[] stations = getInboundStationOptions();
+        if (stations.length == 0) {
+            Toast.makeText(this, "请先完成托盘选择/扫码", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int selectedIndex = -1;
+        for (int i = 0; i < stations.length; i++) {
+            if (stations[i].equals(swapStation)) {
+                selectedIndex = i;
+                break;
+            }
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("选择入库站点")
+            .setSingleChoiceItems(stations, selectedIndex, null)
+            .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface dialog, int which) {
+                    AlertDialog alert = (AlertDialog) dialog;
+                    int index = alert.getListView().getCheckedItemPosition();
+                    if (index >= 0 && index < stations.length) {
+                        updateInboundStationSelection(stations[index]);
+                    }
+                }
+            })
+            .setNegativeButton("取消", null)
+            .show();
+    }
+
+    private void applyPalletTypeDefaults() {
+        String[] stations = getInboundStationOptions();
+        if (stations.length == 1) {
+            updateInboundStationSelection(stations[0]);
+            return;
+        }
+        if (!isInboundStationAllowed(swapStation)) {
+            updateInboundStationSelection(null);
+        } else {
+            updateInboundStationSelection(swapStation);
+        }
+    }
+
+    private String[] getInboundStationOptions() {
+        if (palletType == null || palletType.isEmpty()) {
+            return new String[0];
+        }
+        if (isSmallPalletType(palletType)) {
+            return new String[]{SMALL_LOAD_BIN_1, SMALL_LOAD_BIN_2, SMALL_LOAD_BIN_3};
+        }
+        if (isLargePalletType(palletType)) {
+            return new String[]{LARGE_LOAD_BIN};
+        }
+        return new String[0];
+    }
+
+    private boolean isInboundStationAllowed(String station) {
+        if (station == null || station.isEmpty()) {
+            return false;
+        }
+        String[] stations = getInboundStationOptions();
+        for (String candidate : stations) {
+            if (station.equals(candidate)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void updateInboundStationSelection(String station) {
+        swapStation = station;
+        tvInboundStation.setText(station == null || station.isEmpty() ? "未选择" : station);
+    }
+
+    private boolean isSmallPalletType(String type) {
+        return "SMALL".equalsIgnoreCase(type) || "t1".equalsIgnoreCase(type);
+    }
+
+    private boolean isLargePalletType(String type) {
+        return "LARGE".equalsIgnoreCase(type) || "t2".equalsIgnoreCase(type);
     }
 
     private void applyAgvRange(Map<String, String> params) {
@@ -620,14 +710,6 @@ public class InboundActivity extends Activity {
 
     private void applyInboundLock(boolean locked) {
         inboundLocked = locked;
-        btnCallInbound.setEnabled(!inboundLocked);
-        if (inboundLocked) {
-            btnCallInbound.setAlpha(0.4f);
-            btnCallInbound.setText(callInboundLabel + "（入库锁定）");
-        } else {
-            btnCallInbound.setAlpha(1.0f);
-            btnCallInbound.setText(callInboundLabel);
-        }
     }
     
     @Override
