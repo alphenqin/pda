@@ -118,6 +118,15 @@ public class InboundActivity extends Activity {
         btnScanPallet.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (hasPendingBinding()) {
+                    confirmCancelBindingBeforeAction(new Runnable() {
+                        @Override
+                        public void run() {
+                            scanPallet();
+                        }
+                    }, "重新扫码将取消当前样品绑定，是否继续？");
+                    return;
+                }
                 scanPallet();
             }
         });
@@ -125,6 +134,15 @@ public class InboundActivity extends Activity {
         btnPickBin.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (hasPendingBinding()) {
+                    confirmCancelBindingBeforeAction(new Runnable() {
+                        @Override
+                        public void run() {
+                            handlePickPallet();
+                        }
+                    }, "重新选择托盘将取消当前样品绑定，是否继续？");
+                    return;
+                }
                 handlePickPallet();
             }
         });
@@ -638,24 +656,37 @@ public class InboundActivity extends Activity {
             Toast.makeText(this, "入库任务下发中，请稍后再退出", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (isValveBound && !inboundSubmitted && palletNo != null && !palletNo.isEmpty()) {
-            new AlertDialog.Builder(this)
-                .setTitle("取消绑定")
-                .setMessage("退出后将取消当前样品绑定，是否继续？")
-                .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(android.content.DialogInterface dialog, int which) {
-                        cancelBindingAndFinish();
-                    }
-                })
-                .setNegativeButton("取消", null)
-                .show();
+        if (hasPendingBinding()) {
+            confirmCancelBindingBeforeAction(new Runnable() {
+                @Override
+                public void run() {
+                    finish();
+                }
+            }, "退出后将取消当前样品绑定，是否继续？");
             return;
         }
         finish();
     }
 
-    private void cancelBindingAndFinish() {
+    private boolean hasPendingBinding() {
+        return isValveBound && !inboundSubmitted && palletNo != null && !palletNo.isEmpty();
+    }
+
+    private void confirmCancelBindingBeforeAction(final Runnable afterCancelAction, String message) {
+        new AlertDialog.Builder(this)
+            .setTitle("取消绑定")
+            .setMessage(message)
+            .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface dialog, int which) {
+                    cancelBinding(afterCancelAction);
+                }
+            })
+            .setNegativeButton("取消", null)
+            .show();
+    }
+
+    private void cancelBinding(final Runnable afterCancelAction) {
         Toast.makeText(this, "正在取消绑定...", Toast.LENGTH_SHORT).show();
         new Thread(new Runnable() {
             @Override
@@ -669,8 +700,17 @@ public class InboundActivity extends Activity {
                                 isValveBound = false;
                                 matCode = null;
                                 inboundSubmitted = false;
+                                palletNo = null;
+                                binCode = null;
+                                palletType = null;
+                                updateInboundStationSelection(null);
+                                tvPalletNo.setText("--");
+                                tvLocationCode.setText("--");
+                                updateStatus(false);
                                 Toast.makeText(InboundActivity.this, "已取消绑定", Toast.LENGTH_SHORT).show();
-                                finish();
+                                if (afterCancelAction != null) {
+                                    afterCancelAction.run();
+                                }
                             } else {
                                 Toast.makeText(InboundActivity.this, "取消绑定失败", Toast.LENGTH_SHORT).show();
                             }
