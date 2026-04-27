@@ -67,6 +67,7 @@ public class InboundActivity extends Activity {
     private long lastLockStatusErrorAt = 0L;
     private boolean inboundLocked = false;
     private boolean callInboundInProgress = false;
+    private boolean inboundSubmitted = false;
     private CharSequence callInboundLabel;
 
     @Override
@@ -110,7 +111,7 @@ public class InboundActivity extends Activity {
         btnBack.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish();
+                attemptExit();
             }
         });
         
@@ -203,6 +204,7 @@ public class InboundActivity extends Activity {
                                 palletNo = pallet.getPalletNo();
                                 binCode = pallet.getBinCode();
                                 palletType = pallet.getPalletType();
+                                inboundSubmitted = false;
                                 applyPalletTypeDefaults();
                                 
                                 tvPalletNo.setText(palletNo);
@@ -311,6 +313,7 @@ public class InboundActivity extends Activity {
                             palletNo = availablePallet.getPalletNo();
                             binCode = availablePallet.getBinCode();
                             palletType = palletTypeOption.getTypeCode();
+                            inboundSubmitted = false;
                             applyPalletTypeDefaults();
                             tvPalletNo.setText(palletNo);
                             tvLocationCode.setText(binCode);
@@ -357,9 +360,9 @@ public class InboundActivity extends Activity {
                                     }
                                 }
                                 if (!stillExists) {
-                                    updateSelectedPalletType(null);
-                                }
-                            }
+                        updateSelectedPalletType(null);
+                    }
+                }
                             if (showDialog) {
                                 showPalletTypeDialog();
                             }
@@ -428,6 +431,7 @@ public class InboundActivity extends Activity {
         }
         tvPalletType.setText(label.isEmpty() ? "未命名" : label);
         palletType = option.getTypeCode();
+        inboundSubmitted = false;
         palletNo = null;
         binCode = null;
         tvPalletNo.setText("--");
@@ -477,6 +481,7 @@ public class InboundActivity extends Activity {
                             callInboundInProgress = false;
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
+                                inboundSubmitted = true;
                                 resetInboundFormAfterQueue();
                                 Toast.makeText(InboundActivity.this, 
                                     "入库任务已加入队列，任务号：" + taskNo, 
@@ -518,6 +523,7 @@ public class InboundActivity extends Activity {
         matCode = null;
         palletNo = null;
         binCode = null;
+        inboundSubmitted = false;
         tvPalletNo.setText("--");
         tvLocationCode.setText("--");
         if (isPalletScanEnabled) {
@@ -626,6 +632,62 @@ public class InboundActivity extends Activity {
             params.put("agvRange", agvRange);
         }
     }
+
+    private void attemptExit() {
+        if (callInboundInProgress) {
+            Toast.makeText(this, "入库任务下发中，请稍后再退出", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (isValveBound && !inboundSubmitted && palletNo != null && !palletNo.isEmpty()) {
+            new AlertDialog.Builder(this)
+                .setTitle("取消绑定")
+                .setMessage("退出后将取消当前样品绑定，是否继续？")
+                .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which) {
+                        cancelBindingAndFinish();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+            return;
+        }
+        finish();
+    }
+
+    private void cancelBindingAndFinish() {
+        Toast.makeText(this, "正在取消绑定...", Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    boolean success = wmsApiService.unbindPallet(palletNo, InboundActivity.this);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (success) {
+                                isValveBound = false;
+                                matCode = null;
+                                inboundSubmitted = false;
+                                Toast.makeText(InboundActivity.this, "已取消绑定", Toast.LENGTH_SHORT).show();
+                                finish();
+                            } else {
+                                Toast.makeText(InboundActivity.this, "取消绑定失败", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(InboundActivity.this, "取消绑定失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -718,6 +780,11 @@ public class InboundActivity extends Activity {
             scanHelper.stopScan();
         }
         super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        attemptExit();
     }
 
 }

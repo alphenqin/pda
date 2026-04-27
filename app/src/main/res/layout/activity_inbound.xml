@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="12dp"
     android:background="#F5F5F5">
 
     <!-- 顶部标题栏 -->
@@ -11,8 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
-        android:paddingTop="20dp"
+        android:padding="12dp"
+        android:paddingTop="14dp"
         android:background="@drawable/btn_green"
         android:gravity="center_vertical"
         android:elevation="4dp">
@@ -23,7 +23,7 @@
             android:layout_weight="1"
             android:text="入库"
             android:textColor="@color/text_white"
-            android:textSize="26sp"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
         <Button
@@ -31,10 +31,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="返回"
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:background="@android:color/transparent"
             android:textColor="@color/text_white"
-            android:padding="8dp" />
+            android:padding="6dp" />
     </LinearLayout>
 
     <!-- 信息显示区域 -->
@@ -42,24 +42,24 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp"
+        android:padding="12dp"
         android:background="@drawable/card_background"
-        android:layout_marginTop="12dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
         android:elevation="4dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="8dp">
+            android:padding="4dp">
 
             <TextView
-                android:layout_width="120dp"
+                android:layout_width="96dp"
                 android:layout_height="wrap_content"
                 android:text="托盘号："
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
 
@@ -69,7 +69,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="--"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
 
@@ -77,13 +77,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="8dp">
+            android:padding="4dp">
 
             <TextView
-                android:layout_width="120dp"
+                android:layout_width="96dp"
                 android:layout_height="wrap_content"
                 android:text="入库站点："
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
 
@@ -93,7 +93,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="未选择"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
 
@@ -101,13 +101,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="8dp">
+            android:padding="4dp">
 
             <TextView
-                android:layout_width="120dp"
+                android:layout_width="96dp"
                 android:layout_height="wrap_content"
                 android:text="库位号："
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
 
@@ -117,7 +117,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="--"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
 
@@ -126,23 +126,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="8dp"
+            android:padding="4dp"
             android:gravity="center_vertical">
 
             <TextView
-                android:layout_width="120dp"
+                android:layout_width="96dp"
                 android:layout_height="wrap_content"
                 android:text="状态："
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
 
             <View
                 android:id="@+id/viewStatus"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:background="@color/text_hint"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:backgroundTint="@color/text_hint" />
         </LinearLayout>
     </LinearLayout>
@@ -153,8 +153,8 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:gravity="center">
+        android:padding="12dp"
+        android:gravity="center_vertical">
 
         <LinearLayout
             android:id="@+id/layoutScanPallet"
@@ -165,10 +165,10 @@
             <Button
                 android:id="@+id/btnScanPallet"
                 android:layout_width="match_parent"
-                android:layout_height="110dp"
-                android:layout_marginBottom="12dp"
-                android:text="托盘扫码"
-                android:textSize="22sp"
+                android:layout_height="72dp"
+                android:layout_marginBottom="8dp"
+                android:text="1. 托盘扫码"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:background="@drawable/btn_primary"
                 android:textColor="@color/text_white"
@@ -191,10 +191,10 @@
                 android:gravity="center_vertical">
 
                 <TextView
-                    android:layout_width="120dp"
+                    android:layout_width="96dp"
                     android:layout_height="wrap_content"
                     android:text="托盘类型："
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary" />
 
@@ -204,17 +204,17 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="未选择"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textColor="@color/text_secondary" />
             </LinearLayout>
 
             <Button
                 android:id="@+id/btnPickBin"
                 android:layout_width="match_parent"
-                android:layout_height="110dp"
-                android:layout_marginBottom="12dp"
-                android:text="选取托盘"
-                android:textSize="22sp"
+                android:layout_height="72dp"
+                android:layout_marginBottom="8dp"
+                android:text="1. 选取托盘"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:background="@drawable/btn_primary"
                 android:textColor="@color/text_white"
@@ -225,10 +225,10 @@
         <Button
             android:id="@+id/btnBindValve"
             android:layout_width="match_parent"
-            android:layout_height="110dp"
-            android:layout_marginBottom="20dp"
-            android:text="样品绑定"
-            android:textSize="22sp"
+            android:layout_height="72dp"
+            android:layout_marginBottom="10dp"
+            android:text="2. 样品绑定"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:background="@drawable/btn_orange"
             android:textColor="@color/text_white"
@@ -237,10 +237,10 @@
         <Button
             android:id="@+id/btnSelectInboundStation"
             android:layout_width="match_parent"
-            android:layout_height="90dp"
-            android:layout_marginBottom="20dp"
-            android:text="选择入库站点"
-            android:textSize="20sp"
+            android:layout_height="66dp"
+            android:layout_marginBottom="10dp"
+            android:text="3. 选择入库站点"
+            android:textSize="17sp"
             android:textStyle="bold"
             android:background="@drawable/btn_teal"
             android:textColor="@color/text_white"
@@ -249,13 +249,12 @@
         <Button
             android:id="@+id/btnCallInbound"
             android:layout_width="match_parent"
-            android:layout_height="110dp"
-            android:text="呼叫入库"
-            android:textSize="22sp"
+            android:layout_height="72dp"
+            android:text="4. 呼叫入库"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:background="@drawable/btn_green"
             android:textColor="@color/text_white"
             android:elevation="6dp" />
     </LinearLayout>
-
 </LinearLayout>
