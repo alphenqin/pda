@@ -123,13 +123,13 @@ public class WmsApiService {
     }
 
     /**
-     * 按托盘类型获取可用托盘
+     * 按库外站点获取托盘
      */
-    public AvailablePallet getAvailablePallet(Long palletTypeId, Context context) throws IOException {
+    public AvailablePallet getAvailablePallet(String outsideSite, Context context) throws IOException {
         String url = getBaseUrl() + "/pallet/available";
 
         Map<String, Object> request = new HashMap<>();
-        request.put("palletTypeId", palletTypeId);
+        request.put("outsideSite", outsideSite);
 
         String json = HttpUtil.toJson(request);
         String response = HttpUtil.post(url, json, context);

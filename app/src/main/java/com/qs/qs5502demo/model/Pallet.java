@@ -12,6 +12,7 @@ public class Pallet implements Serializable {
     private String swapStation;     // 置换区站点，如 "WAREHOUSE_SWAP_1"
     private String binCode;         // 库位号，与调度系统 binCode 一致，如 "2-01"
     private String locationCode;    // 库位号（兼容旧字段），如 "2-01"
+    private String outsideSite;     // 库外站点，如 "Z1-装卸点"
 
     public Pallet() {
     }
@@ -63,6 +64,14 @@ public class Pallet implements Serializable {
     public void setLocationCode(String locationCode) {
         this.locationCode = locationCode;
         this.binCode = locationCode; // 同步更新
+    }
+
+    public String getOutsideSite() {
+        return outsideSite;
+    }
+
+    public void setOutsideSite(String outsideSite) {
+        this.outsideSite = outsideSite;
     }
 }
 

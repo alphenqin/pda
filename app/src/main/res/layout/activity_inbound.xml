@@ -82,7 +82,7 @@
             <TextView
                 android:layout_width="96dp"
                 android:layout_height="wrap_content"
-                android:text="入库站点："
+                android:text="库外站点："
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
@@ -156,6 +156,18 @@
         android:padding="12dp"
         android:gravity="center_vertical">
 
+        <Button
+            android:id="@+id/btnSelectInboundStation"
+            android:layout_width="match_parent"
+            android:layout_height="66dp"
+            android:layout_marginBottom="10dp"
+            android:text="1. 选择库外站点"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:background="@drawable/btn_teal"
+            android:textColor="@color/text_white"
+            android:elevation="6dp" />
+
         <LinearLayout
             android:id="@+id/layoutScanPallet"
             android:layout_width="match_parent"
@@ -167,53 +179,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="72dp"
                 android:layout_marginBottom="8dp"
-                android:text="1. 托盘扫码"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:background="@drawable/btn_primary"
-                android:textColor="@color/text_white"
-                android:elevation="6dp" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/layoutManualBin"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="8dp"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:layout_width="96dp"
-                    android:layout_height="wrap_content"
-                    android:text="托盘类型："
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary" />
-
-                <TextView
-                    android:id="@+id/tvPalletType"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="未选择"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_secondary" />
-            </LinearLayout>
-
-            <Button
-                android:id="@+id/btnPickBin"
-                android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginBottom="8dp"
-                android:text="1. 选取托盘"
+                android:text="2. 托盘扫码"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:background="@drawable/btn_primary"
@@ -227,22 +193,10 @@
             android:layout_width="match_parent"
             android:layout_height="72dp"
             android:layout_marginBottom="10dp"
-            android:text="2. 样品绑定"
+            android:text="3. 样品绑定"
             android:textSize="18sp"
             android:textStyle="bold"
             android:background="@drawable/btn_orange"
-            android:textColor="@color/text_white"
-            android:elevation="6dp" />
-
-        <Button
-            android:id="@+id/btnSelectInboundStation"
-            android:layout_width="match_parent"
-            android:layout_height="66dp"
-            android:layout_marginBottom="10dp"
-            android:text="3. 选择入库站点"
-            android:textSize="17sp"
-            android:textStyle="bold"
-            android:background="@drawable/btn_teal"
             android:textColor="@color/text_white"
             android:elevation="6dp" />
 

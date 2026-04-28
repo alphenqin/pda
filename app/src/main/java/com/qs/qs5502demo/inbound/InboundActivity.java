@@ -15,7 +15,6 @@ import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.model.AvailablePallet;
 import com.qs.qs5502demo.model.Pallet;
-import com.qs.qs5502demo.model.PalletTypeOption;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.TaskLockStatus;
@@ -23,9 +22,7 @@ import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
 import com.qs.qs5502demo.util.ScanHelper;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class InboundActivity extends Activity {
@@ -41,14 +38,11 @@ public class InboundActivity extends Activity {
     private TextView tvInboundStation;
     private View viewStatus;
     private View layoutScanPallet;
-    private View layoutManualBin;
     private Button btnScanPallet;
-    private Button btnPickBin;
     private Button btnBindValve;
     private Button btnSelectInboundStation;
     private Button btnCallInbound;
     private Button btnBack;
-    private TextView tvPalletType;
     
     private WmsApiService wmsApiService;
     private ScanHelper scanHelper;
@@ -60,8 +54,6 @@ public class InboundActivity extends Activity {
     private String matCode;  // 阀门物料编码
     private boolean isValveBound = false;  // 阀门是否已绑定
     private boolean isPalletScanEnabled = true;
-    private final List<PalletTypeOption> palletTypeList = new ArrayList<>();
-    private PalletTypeOption selectedPalletType;
     private Handler handler = new Handler();
     private Runnable inboundLockRunnable;
     private long lastLockStatusErrorAt = 0L;
@@ -89,18 +81,16 @@ public class InboundActivity extends Activity {
         tvInboundStation = (TextView) findViewById(R.id.tvInboundStation);
         viewStatus = findViewById(R.id.viewStatus);
         layoutScanPallet = findViewById(R.id.layoutScanPallet);
-        layoutManualBin = findViewById(R.id.layoutManualBin);
         btnScanPallet = (Button) findViewById(R.id.btnScanPallet);
-        btnPickBin = (Button) findViewById(R.id.btnPickBin);
         btnBindValve = (Button) findViewById(R.id.btnBindValve);
         btnSelectInboundStation = (Button) findViewById(R.id.btnSelectInboundStation);
         btnCallInbound = (Button) findViewById(R.id.btnCallInbound);
         btnBack = (Button) findViewById(R.id.btnBack);
-        tvPalletType = (TextView) findViewById(R.id.tvPalletType);
         callInboundLabel = btnCallInbound.getText();
         
         isPalletScanEnabled = PreferenceUtil.getWmsPalletScanEnabled(this);
         togglePalletEntryMode(isPalletScanEnabled);
+        updateStepLabels();
 
         // 初始状态
         updateStatus(false);
@@ -130,28 +120,12 @@ public class InboundActivity extends Activity {
                 scanPallet();
             }
         });
-
-        btnPickBin.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (hasPendingBinding()) {
-                    confirmCancelBindingBeforeAction(new Runnable() {
-                        @Override
-                        public void run() {
-                            handlePickPallet();
-                        }
-                    }, "重新选择托盘将取消当前样品绑定，是否继续？");
-                    return;
-                }
-                handlePickPallet();
-            }
-        });
         
         btnBindValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (palletNo == null || palletNo.isEmpty()) {
-                    String msg = isPalletScanEnabled ? "请先完成托盘扫码" : "请先录入库位号";
+                    String msg = isPalletScanEnabled ? "请先完成托盘扫码" : "请先选择库外站点";
                     Toast.makeText(InboundActivity.this, msg, Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -222,6 +196,9 @@ public class InboundActivity extends Activity {
                                 palletNo = pallet.getPalletNo();
                                 binCode = pallet.getBinCode();
                                 palletType = pallet.getPalletType();
+                                if (pallet.getSwapStation() != null && !pallet.getSwapStation().isEmpty()) {
+                                    updateInboundStationSelection(pallet.getSwapStation());
+                                }
                                 inboundSubmitted = false;
                                 applyPalletTypeDefaults();
                                 
@@ -253,7 +230,7 @@ public class InboundActivity extends Activity {
      */
     private void callInbound() {
         if (palletNo == null || palletNo.isEmpty()) {
-            String msg = isPalletScanEnabled ? "请先完成托盘扫码" : "请先录入库位号";
+            String msg = isPalletScanEnabled ? "请先完成托盘扫码" : "请先选择库外站点";
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
             return;
         }
@@ -264,7 +241,7 @@ public class InboundActivity extends Activity {
         }
 
         if (swapStation == null || swapStation.isEmpty()) {
-            Toast.makeText(this, "请先选择入库站点", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先选择库外站点", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -274,7 +251,7 @@ public class InboundActivity extends Activity {
     private void showInboundConfirmDialog() {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫入库")
-            .setMessage("托盘号：" + palletNo + "\n库位号：" + binCode + "\n入库站点：" + swapStation)
+            .setMessage("托盘号：" + palletNo + "\n库位号：" + binCode + "\n库外站点：" + swapStation)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -286,29 +263,12 @@ public class InboundActivity extends Activity {
     }
 
     private void togglePalletEntryMode(boolean enableScan) {
-        if (enableScan) {
-            layoutScanPallet.setVisibility(View.VISIBLE);
-            layoutManualBin.setVisibility(View.GONE);
-        } else {
-            layoutScanPallet.setVisibility(View.GONE);
-            layoutManualBin.setVisibility(View.VISIBLE);
-            if (palletTypeList.isEmpty()) {
-                loadPalletTypes(false);
-            }
-        }
+        layoutScanPallet.setVisibility(enableScan ? View.VISIBLE : View.GONE);
     }
 
-    private void handlePickPallet() {
-        if (palletTypeList.isEmpty()) {
-            loadPalletTypes(true);
-            return;
-        }
-        showPalletTypeDialog();
-    }
-
-    private void fetchAvailablePallet(PalletTypeOption palletTypeOption) {
-        if (palletTypeOption == null || palletTypeOption.getId() == null) {
-            Toast.makeText(this, "托盘类型无效", Toast.LENGTH_SHORT).show();
+    private void fetchAvailablePallet(String outsideSite) {
+        if (outsideSite == null || outsideSite.isEmpty()) {
+            Toast.makeText(this, "库外站点无效", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -318,21 +278,25 @@ public class InboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    AvailablePallet availablePallet = wmsApiService.getAvailablePallet(
-                        palletTypeOption.getId(), InboundActivity.this);
+                    AvailablePallet availablePallet = wmsApiService.getAvailablePallet(outsideSite, InboundActivity.this);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             if (availablePallet == null || availablePallet.getPalletNo() == null
                                 || availablePallet.getPalletNo().isEmpty()) {
-                                Toast.makeText(InboundActivity.this, "未获取到可用托盘", Toast.LENGTH_SHORT).show();
+                                palletNo = null;
+                                binCode = null;
+                                palletType = resolvePalletTypeByOutsideSite(outsideSite);
+                                tvPalletNo.setText("--");
+                                tvLocationCode.setText("--");
+                                updateStatus(false);
+                                Toast.makeText(InboundActivity.this, "该库外站点未找到可用托盘", Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             palletNo = availablePallet.getPalletNo();
                             binCode = availablePallet.getBinCode();
-                            palletType = palletTypeOption.getTypeCode();
+                            palletType = resolvePalletTypeByOutsideSite(outsideSite);
                             inboundSubmitted = false;
-                            applyPalletTypeDefaults();
                             tvPalletNo.setText(palletNo);
                             tvLocationCode.setText(binCode);
                             updateStatus(true);
@@ -343,119 +307,19 @@ public class InboundActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(InboundActivity.this, "选取托盘失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(InboundActivity.this, "查询托盘失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            if (!isPalletScanEnabled) {
+                                palletNo = null;
+                                binCode = null;
+                                tvPalletNo.setText("--");
+                                tvLocationCode.setText("--");
+                                updateStatus(false);
+                            }
                         }
                     });
                 }
             }
         }).start();
-    }
-
-    private void loadPalletTypes(boolean showDialog) {
-        Toast.makeText(this, "正在获取托盘类型...", Toast.LENGTH_SHORT).show();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    List<PalletTypeOption> types = wmsApiService.listPalletTypes(InboundActivity.this);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            palletTypeList.clear();
-                            if (types != null) {
-                                palletTypeList.addAll(types);
-                            }
-                            if (palletTypeList.isEmpty()) {
-                                Toast.makeText(InboundActivity.this, "未获取到托盘类型", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                            if (selectedPalletType != null) {
-                                boolean stillExists = false;
-                                for (PalletTypeOption option : palletTypeList) {
-                                    if (option.getId() != null && option.getId().equals(selectedPalletType.getId())) {
-                                        stillExists = true;
-                                        break;
-                                    }
-                                }
-                                if (!stillExists) {
-                        updateSelectedPalletType(null);
-                    }
-                }
-                            if (showDialog) {
-                                showPalletTypeDialog();
-                            }
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(InboundActivity.this, "获取托盘类型失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            }
-        }).start();
-    }
-
-    private void showPalletTypeDialog() {
-        if (palletTypeList.isEmpty()) {
-            Toast.makeText(this, "暂无托盘类型可选", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String[] items = new String[palletTypeList.size()];
-        int selectedIndex = -1;
-        for (int i = 0; i < palletTypeList.size(); i++) {
-            PalletTypeOption option = palletTypeList.get(i);
-            String name = option.getTypeName() != null ? option.getTypeName() : "";
-            String code = option.getTypeCode() != null ? option.getTypeCode() : "";
-            String label = name.isEmpty() ? code : name + (code.isEmpty() ? "" : " (" + code + ")");
-            items[i] = label.isEmpty() ? "未命名" : label;
-            if (selectedPalletType != null && option.getId() != null && option.getId().equals(selectedPalletType.getId())) {
-                selectedIndex = i;
-            }
-        }
-        new AlertDialog.Builder(this)
-            .setTitle("选择托盘类型")
-            .setSingleChoiceItems(items, selectedIndex, null)
-            .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(android.content.DialogInterface dialog, int which) {
-                    AlertDialog alert = (AlertDialog) dialog;
-                    int index = alert.getListView().getCheckedItemPosition();
-                    if (index >= 0 && index < palletTypeList.size()) {
-                        PalletTypeOption option = palletTypeList.get(index);
-                        updateSelectedPalletType(option);
-                        fetchAvailablePallet(option);
-                    }
-                }
-            })
-            .setNegativeButton("取消", null)
-            .show();
-    }
-
-    private void updateSelectedPalletType(PalletTypeOption option) {
-        selectedPalletType = option;
-        if (option == null) {
-            tvPalletType.setText("未选择");
-            palletType = null;
-            updateInboundStationSelection(null);
-            return;
-        }
-        String label = option.getTypeName() != null ? option.getTypeName() : "";
-        if (label.isEmpty()) {
-            label = option.getTypeCode() != null ? option.getTypeCode() : "";
-        }
-        tvPalletType.setText(label.isEmpty() ? "未命名" : label);
-        palletType = option.getTypeCode();
-        inboundSubmitted = false;
-        palletNo = null;
-        binCode = null;
-        tvPalletNo.setText("--");
-        tvLocationCode.setText("--");
-        applyPalletTypeDefaults();
-        updateStatus(false);
     }
     
     /**
@@ -547,6 +411,8 @@ public class InboundActivity extends Activity {
         if (isPalletScanEnabled) {
             palletType = null;
             updateInboundStationSelection(null);
+        } else if (swapStation != null && !swapStation.isEmpty()) {
+            fetchAvailablePallet(swapStation);
         }
         updateStatus(false);
     }
@@ -564,10 +430,6 @@ public class InboundActivity extends Activity {
 
     private void showInboundStationDialog() {
         String[] stations = getInboundStationOptions();
-        if (stations.length == 0) {
-            Toast.makeText(this, "请先完成托盘选择/扫码", Toast.LENGTH_SHORT).show();
-            return;
-        }
         int selectedIndex = -1;
         for (int i = 0; i < stations.length; i++) {
             if (stations[i].equals(swapStation)) {
@@ -576,7 +438,7 @@ public class InboundActivity extends Activity {
             }
         }
         new AlertDialog.Builder(this)
-            .setTitle("选择入库站点")
+            .setTitle("选择库外站点")
             .setSingleChoiceItems(stations, selectedIndex, null)
             .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener() {
                 @Override
@@ -584,7 +446,14 @@ public class InboundActivity extends Activity {
                     AlertDialog alert = (AlertDialog) dialog;
                     int index = alert.getListView().getCheckedItemPosition();
                     if (index >= 0 && index < stations.length) {
-                        updateInboundStationSelection(stations[index]);
+                        String station = stations[index];
+                        updateInboundStationSelection(station);
+                        if (!isPalletScanEnabled) {
+                            fetchAvailablePallet(station);
+                        } else if (!isInboundStationAllowed(station)) {
+                            Toast.makeText(InboundActivity.this, "当前托盘类型不支持该库外站点", Toast.LENGTH_SHORT).show();
+                            updateInboundStationSelection(null);
+                        }
                     }
                 }
             })
@@ -593,6 +462,10 @@ public class InboundActivity extends Activity {
     }
 
     private void applyPalletTypeDefaults() {
+        if (!isPalletScanEnabled) {
+            palletType = resolvePalletTypeByOutsideSite(swapStation);
+            return;
+        }
         String[] stations = getInboundStationOptions();
         if (stations.length == 1) {
             updateInboundStationSelection(stations[0]);
@@ -606,8 +479,8 @@ public class InboundActivity extends Activity {
     }
 
     private String[] getInboundStationOptions() {
-        if (palletType == null || palletType.isEmpty()) {
-            return new String[0];
+        if (!isPalletScanEnabled || palletType == null || palletType.isEmpty()) {
+            return new String[]{SMALL_LOAD_BIN_1, SMALL_LOAD_BIN_2, SMALL_LOAD_BIN_3, LARGE_LOAD_BIN};
         }
         if (isSmallPalletType(palletType)) {
             return new String[]{SMALL_LOAD_BIN_1, SMALL_LOAD_BIN_2, SMALL_LOAD_BIN_3};
@@ -634,6 +507,23 @@ public class InboundActivity extends Activity {
     private void updateInboundStationSelection(String station) {
         swapStation = station;
         tvInboundStation.setText(station == null || station.isEmpty() ? "未选择" : station);
+    }
+
+    private String resolvePalletTypeByOutsideSite(String outsideSite) {
+        if (outsideSite == null || outsideSite.isEmpty()) {
+            return null;
+        }
+        return LARGE_LOAD_BIN.equals(outsideSite) ? "t2" : "t1";
+    }
+
+    private void updateStepLabels() {
+        btnSelectInboundStation.setText("1. 选择库外站点");
+        btnBindValve.setText(isPalletScanEnabled ? "3. 样品绑定" : "2. 样品绑定");
+        btnCallInbound.setText(isPalletScanEnabled ? "4. 呼叫入库" : "3. 呼叫入库");
+        callInboundLabel = btnCallInbound.getText();
+        if (btnScanPallet != null) {
+            btnScanPallet.setText("2. 托盘扫码");
+        }
     }
 
     private boolean isSmallPalletType(String type) {
@@ -702,11 +592,18 @@ public class InboundActivity extends Activity {
                                 inboundSubmitted = false;
                                 palletNo = null;
                                 binCode = null;
-                                palletType = null;
-                                updateInboundStationSelection(null);
+                                if (isPalletScanEnabled) {
+                                    palletType = null;
+                                    updateInboundStationSelection(null);
+                                } else {
+                                    palletType = resolvePalletTypeByOutsideSite(swapStation);
+                                }
                                 tvPalletNo.setText("--");
                                 tvLocationCode.setText("--");
                                 updateStatus(false);
+                                if (!isPalletScanEnabled && swapStation != null && !swapStation.isEmpty()) {
+                                    fetchAvailablePallet(swapStation);
+                                }
                                 Toast.makeText(InboundActivity.this, "已取消绑定", Toast.LENGTH_SHORT).show();
                                 if (afterCancelAction != null) {
                                     afterCancelAction.run();
@@ -751,6 +648,10 @@ public class InboundActivity extends Activity {
         if (enabled != isPalletScanEnabled) {
             isPalletScanEnabled = enabled;
             togglePalletEntryMode(isPalletScanEnabled);
+            updateStepLabels();
+            if (!isPalletScanEnabled && swapStation != null && !swapStation.isEmpty()) {
+                fetchAvailablePallet(swapStation);
+            }
         }
     }
 
