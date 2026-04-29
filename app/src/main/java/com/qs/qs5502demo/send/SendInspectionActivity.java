@@ -32,8 +32,8 @@ import java.util.Map;
 public class SendInspectionActivity extends Activity {
 
     private static final long INSPECTION_LOCK_POLL_MS = 5000L;
-    private static final String INSPECTION_AREA_WAITING = "WAITING";
-    private static final String INSPECTION_AREA_FLOW = "FLOW_DEVICE";
+    private static final String SMALL_PALLET_INSPECTION_BIN = "Z5-装卸点";
+    private static final String LARGE_PALLET_INSPECTION_BIN = "Z6-装卸点";
     
     private TextView tvPalletNo;
     private TextView tvLocationCode;
@@ -48,7 +48,6 @@ public class SendInspectionActivity extends Activity {
     private String palletNo;
     private String binCode;
     private String matCode;
-    private String inspectionStation = "INSPECTION_STATION_1"; // 检测区站点，可根据实际情况配置
     private Valve selectedValve;
     private Handler handler = new Handler();
     private Runnable inspectionLockRunnable;
@@ -130,36 +129,40 @@ public class SendInspectionActivity extends Activity {
             return;
         }
 
-        showInspectionAreaDialog();
+        String targetBinCode = resolveInspectionTargetBin(palletNo);
+        if (targetBinCode == null) {
+            Toast.makeText(this, "托盘型号无法识别，无法确定送检站点", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        showSendInspectionConfirm(targetBinCode);
     }
 
-    private void showInspectionAreaDialog() {
-        final String[] items = new String[] { "待检区", "直排流量装置区" };
-        new AlertDialog.Builder(this)
-            .setTitle("选择目标站点")
-            .setItems(items, new android.content.DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(android.content.DialogInterface dialog, int which) {
-                    String area = which == 0 ? INSPECTION_AREA_WAITING : INSPECTION_AREA_FLOW;
-                    String label = items[which];
-                    showSendInspectionConfirm(area, label);
-                }
-            })
-            .setNegativeButton("取消", null)
-            .show();
+    private String resolveInspectionTargetBin(String palletNo) {
+        if (palletNo == null) {
+            return null;
+        }
+        String normalized = palletNo.trim().toLowerCase(Locale.getDefault());
+        if (normalized.startsWith("x")) {
+            return SMALL_PALLET_INSPECTION_BIN;
+        }
+        if (normalized.startsWith("d")) {
+            return LARGE_PALLET_INSPECTION_BIN;
+        }
+        return null;
     }
 
-    private void showSendInspectionConfirm(String area, String areaLabel) {
+    private void showSendInspectionConfirm(String targetBinCode) {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫送检")
             .setMessage("样品编号：" + selectedValve.getValveNo() +
                        "\n托盘号：" + palletNo +
                        "\n库位号：" + binCode +
-                       "\n目标区域：" + areaLabel)
+                       "\n目标站点：" + targetBinCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
-                    performCallSendInspection(area);
+                    performCallSendInspection(targetBinCode);
                 }
             })
             .setNegativeButton("取消", null)
@@ -169,7 +172,7 @@ public class SendInspectionActivity extends Activity {
     /**
      * 执行呼叫送检
      */
-    private void performCallSendInspection(String area) {
+    private void performCallSendInspection(String targetBinCode) {
         if (callSendInProgress) {
             Toast.makeText(this, "送检任务下发中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
@@ -193,8 +196,7 @@ public class SendInspectionActivity extends Activity {
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(SendInspectionActivity.this));
                     params.put("palletNo", palletNo);
                     params.put("fromBinCode", binCode);
-                    params.put("toBinCode", area);
-                    params.put("inspectionArea", area);
+                    params.put("toBinCode", targetBinCode);
                     if (selectedValve != null && selectedValve.getValveNo() != null) {
                         params.put("valveNo", selectedValve.getValveNo());
                     }

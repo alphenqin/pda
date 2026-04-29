@@ -50,6 +50,8 @@ public class ReturnWarehouseActivity extends Activity {
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
     private static final String LARGE_DOCK_BIN = "D2-大托盘接驳点";
+    private static final String SMALL_RETURN_OUTSIDE_SITE = "Z5-装卸点";
+    private static final String LARGE_RETURN_OUTSIDE_SITE = "Z6-装卸点";
     private static final long LOCK_POLL_INTERVAL_MS = 5000L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -136,22 +138,23 @@ public class ReturnWarehouseActivity extends Activity {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (inspectionTargetBin == null || inspectionTargetBin.isEmpty()) {
-            Toast.makeText(this, "送检目标站点未设置，请先完成送检", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         String palletType = resolvePalletTypeCode(palletNo);
         if (palletType == null) {
             Toast.makeText(this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
             return;
         }
+        String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+        if (returnOutsideSite == null) {
+            Toast.makeText(this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        inspectionTargetBin = returnOutsideSite;
         String bufferBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_BUFFER_BIN : SMALL_BUFFER_BIN;
         
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫托盘")
             .setMessage("将空托盘从库位 " + binCode + " 运送到中转位 " + bufferBin +
-                "\n完成后送往目标站点：" + inspectionTargetBin)
+                "\n完成后送往库外站点：" + returnOutsideSite)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -182,6 +185,17 @@ public class ReturnWarehouseActivity extends Activity {
                         });
                         return;
                     }
+                    String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+                    if (returnOutsideSite == null) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ReturnWarehouseActivity.this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        return;
+                    }
+                    inspectionTargetBin = returnOutsideSite;
                     callPalletInProgress = true;
                     runOnUiThread(new Runnable() {
                         @Override
@@ -197,7 +211,7 @@ public class ReturnWarehouseActivity extends Activity {
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
                     params.put("palletNo", palletNo);
                     params.put("fromBinCode", binCode);
-                    params.put("toBinCode", inspectionTargetBin);
+                    params.put("toBinCode", returnOutsideSite);
                     params.put("remark", "RETURN_CALL_PALLET");
                     if (selectedValve != null && selectedValve.getValveNo() != null) {
                         params.put("valveNo", selectedValve.getValveNo());
@@ -264,10 +278,12 @@ public class ReturnWarehouseActivity extends Activity {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (inspectionTargetBin == null || inspectionTargetBin.isEmpty()) {
-            Toast.makeText(this, "送检目标站点未设置，请先完成送检", Toast.LENGTH_SHORT).show();
+        String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+        if (returnOutsideSite == null) {
+            Toast.makeText(this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
             return;
         }
+        inspectionTargetBin = returnOutsideSite;
         if (returnValveLocked || valveReturnInProgress) {
             Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
@@ -306,6 +322,17 @@ public class ReturnWarehouseActivity extends Activity {
                         });
                         return;
                     }
+                    String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+                    if (returnOutsideSite == null) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(ReturnWarehouseActivity.this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        return;
+                    }
+                    inspectionTargetBin = returnOutsideSite;
                     valveReturnInProgress = true;
                     runOnUiThread(new Runnable() {
                         @Override
@@ -320,7 +347,7 @@ public class ReturnWarehouseActivity extends Activity {
                     params.put("outID", outId);
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
                     params.put("palletNo", palletNo);
-                    params.put("fromBinCode", inspectionTargetBin);
+                    params.put("fromBinCode", returnOutsideSite);
                     params.put("toBinCode", binCode);
                     if (matCode != null) {
                         params.put("matCode", matCode);
@@ -514,6 +541,17 @@ public class ReturnWarehouseActivity extends Activity {
         return null;
     }
 
+    private String resolveReturnOutsideSite(String palletNo) {
+        String palletType = resolvePalletTypeCode(palletNo);
+        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
+            return SMALL_RETURN_OUTSIDE_SITE;
+        }
+        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
+            return LARGE_RETURN_OUTSIDE_SITE;
+        }
+        return null;
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -524,7 +562,8 @@ public class ReturnWarehouseActivity extends Activity {
                 palletNo = selectedValve.getPalletNo();
                 binCode = selectedValve.getBinCode();
                 matCode = selectedValve.getMatCode();
-                inspectionTargetBin = selectedValve.getInspectionTargetBin();
+                String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+                inspectionTargetBin = returnOutsideSite != null ? returnOutsideSite : selectedValve.getInspectionTargetBin();
                 
                 tvPalletNo.setText(palletNo);
                 tvLocationCode.setText(binCode);
