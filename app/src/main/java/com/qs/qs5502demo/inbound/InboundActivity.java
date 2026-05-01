@@ -31,7 +31,8 @@ public class InboundActivity extends Activity {
     private static final String SMALL_LOAD_BIN_1 = "Z1-装卸点";
     private static final String SMALL_LOAD_BIN_2 = "Z2-装卸点";
     private static final String SMALL_LOAD_BIN_3 = "Z3-装卸点";
-    private static final String LARGE_LOAD_BIN = "Z4-装卸点";
+    private static final String SMALL_LOAD_BIN_4 = "Z4-装卸点";
+    private static final String LARGE_LOAD_BIN = "Z5-装卸点";
 
     private TextView tvPalletNo;
     private TextView tvLocationCode;
@@ -480,10 +481,10 @@ public class InboundActivity extends Activity {
 
     private String[] getInboundStationOptions() {
         if (!isPalletScanEnabled || palletType == null || palletType.isEmpty()) {
-            return new String[]{SMALL_LOAD_BIN_1, SMALL_LOAD_BIN_2, SMALL_LOAD_BIN_3, LARGE_LOAD_BIN};
+            return new String[]{SMALL_LOAD_BIN_1, SMALL_LOAD_BIN_2, SMALL_LOAD_BIN_3, SMALL_LOAD_BIN_4, LARGE_LOAD_BIN};
         }
         if (isSmallPalletType(palletType)) {
-            return new String[]{SMALL_LOAD_BIN_1, SMALL_LOAD_BIN_2, SMALL_LOAD_BIN_3};
+            return new String[]{SMALL_LOAD_BIN_1, SMALL_LOAD_BIN_2, SMALL_LOAD_BIN_3, SMALL_LOAD_BIN_4};
         }
         if (isLargePalletType(palletType)) {
             return new String[]{LARGE_LOAD_BIN};

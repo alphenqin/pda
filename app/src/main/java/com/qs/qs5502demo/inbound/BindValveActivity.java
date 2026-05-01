@@ -99,12 +99,6 @@ public class BindValveActivity extends Activity {
         String valveNo = etValveNo.getText().toString().trim();
         String inboundDate = etInboundDate.getText().toString().trim();
         
-        if (vendorName.isEmpty()) {
-            Toast.makeText(this, "请输入送检单位", Toast.LENGTH_SHORT).show();
-            etVendorName.requestFocus();
-            return;
-        }
-
         if (valveNo.isEmpty()) {
             Toast.makeText(this, "请输入出厂编号", Toast.LENGTH_SHORT).show();
             etValveNo.requestFocus();

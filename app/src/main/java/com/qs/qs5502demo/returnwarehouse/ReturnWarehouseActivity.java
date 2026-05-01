@@ -50,8 +50,8 @@ public class ReturnWarehouseActivity extends Activity {
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
     private static final String LARGE_DOCK_BIN = "D2-大托盘接驳点";
-    private static final String SMALL_RETURN_OUTSIDE_SITE = "Z5-装卸点";
-    private static final String LARGE_RETURN_OUTSIDE_SITE = "Z6-装卸点";
+    private static final String SMALL_RETURN_OUTSIDE_SITE = "Z6-装卸点";
+    private static final String LARGE_RETURN_OUTSIDE_SITE = "Z7-装卸点";
     private static final long LOCK_POLL_INTERVAL_MS = 5000L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());

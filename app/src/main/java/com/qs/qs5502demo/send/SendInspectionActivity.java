@@ -32,8 +32,8 @@ import java.util.Map;
 public class SendInspectionActivity extends Activity {
 
     private static final long INSPECTION_LOCK_POLL_MS = 5000L;
-    private static final String SMALL_PALLET_INSPECTION_BIN = "Z5-装卸点";
-    private static final String LARGE_PALLET_INSPECTION_BIN = "Z6-装卸点";
+    private static final String SMALL_PALLET_INSPECTION_BIN = "Z6-装卸点";
+    private static final String LARGE_PALLET_INSPECTION_BIN = "Z7-装卸点";
     
     private TextView tvPalletNo;
     private TextView tvLocationCode;
