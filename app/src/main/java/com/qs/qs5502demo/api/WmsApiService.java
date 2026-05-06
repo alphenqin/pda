@@ -92,8 +92,19 @@ public class WmsApiService {
      * 获取可用库位
      */
     public AvailableBin getAvailableBin(Context context) throws IOException {
+        return getAvailableBin(null, null, context);
+    }
+
+    public AvailableBin getAvailableBin(String palletType, Boolean firstFloor, Context context) throws IOException {
         String url = getBaseUrl() + "/bin/available";
-        String response = HttpUtil.post(url, "{}", context);
+        Map<String, Object> request = new HashMap<>();
+        if (palletType != null && !palletType.isEmpty()) {
+            request.put("palletType", palletType);
+        }
+        if (firstFloor != null) {
+            request.put("firstFloor", firstFloor);
+        }
+        String response = HttpUtil.post(url, HttpUtil.toJson(request), context);
 
         Type type = new TypeToken<ApiResponse<AvailableBin>>(){}.getType();
         ApiResponse<AvailableBin> apiResponse = HttpUtil.fromJson(response, type);

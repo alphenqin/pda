@@ -8,11 +8,15 @@ import android.os.Handler;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
+import com.qs.qs5502demo.model.AvailableBin;
 import com.qs.qs5502demo.model.AvailablePallet;
 import com.qs.qs5502demo.model.Pallet;
 import com.qs.qs5502demo.model.Task;
@@ -37,6 +41,7 @@ public class InboundActivity extends Activity {
     private TextView tvPalletNo;
     private TextView tvLocationCode;
     private TextView tvInboundStation;
+    private TextView tvStorageFloor;
     private View viewStatus;
     private View layoutScanPallet;
     private Button btnScanPallet;
@@ -52,6 +57,7 @@ public class InboundActivity extends Activity {
     private String binCode;
     private String swapStation;
     private String palletType;
+    private Boolean storageFirstFloor;
     private String matCode;  // 阀门物料编码
     private boolean isValveBound = false;  // 阀门是否已绑定
     private boolean isPalletScanEnabled = true;
@@ -80,6 +86,7 @@ public class InboundActivity extends Activity {
         tvPalletNo = (TextView) findViewById(R.id.tvPalletNo);
         tvLocationCode = (TextView) findViewById(R.id.tvLocationCode);
         tvInboundStation = (TextView) findViewById(R.id.tvInboundStation);
+        tvStorageFloor = (TextView) findViewById(R.id.tvStorageFloor);
         viewStatus = findViewById(R.id.viewStatus);
         layoutScanPallet = findViewById(R.id.layoutScanPallet);
         btnScanPallet = (Button) findViewById(R.id.btnScanPallet);
@@ -128,6 +135,14 @@ public class InboundActivity extends Activity {
                 if (palletNo == null || palletNo.isEmpty()) {
                     String msg = isPalletScanEnabled ? "请先完成托盘扫码" : "请先选择库外站点";
                     Toast.makeText(InboundActivity.this, msg, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (storageFirstFloor == null) {
+                    Toast.makeText(InboundActivity.this, "请先选择存放库位", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (binCode == null || binCode.isEmpty()) {
+                    Toast.makeText(InboundActivity.this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 // 跳转到阀门绑定页面
@@ -195,18 +210,18 @@ public class InboundActivity extends Activity {
                         public void run() {
                             if (pallet != null) {
                                 palletNo = pallet.getPalletNo();
-                                binCode = pallet.getBinCode();
+                                binCode = null;
                                 palletType = pallet.getPalletType();
                                 if (pallet.getSwapStation() != null && !pallet.getSwapStation().isEmpty()) {
                                     updateInboundStationSelection(pallet.getSwapStation());
                                 }
                                 inboundSubmitted = false;
                                 applyPalletTypeDefaults();
-                                
+
                                 tvPalletNo.setText(palletNo);
-                                tvLocationCode.setText(binCode);
-                                
-                                updateStatus(true);
+                                tvLocationCode.setText(binCode == null || binCode.isEmpty() ? "--" : binCode);
+
+                                updateStatus(binCode != null && !binCode.isEmpty());
                                 Toast.makeText(InboundActivity.this, "扫码成功", Toast.LENGTH_SHORT).show();
                             } else {
                                 Toast.makeText(InboundActivity.this, "扫码失败，未找到托盘信息", Toast.LENGTH_SHORT).show();
@@ -245,6 +260,14 @@ public class InboundActivity extends Activity {
             Toast.makeText(this, "请先选择库外站点", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (storageFirstFloor == null) {
+            Toast.makeText(this, "请先选择存放库位", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (binCode == null || binCode.isEmpty()) {
+            Toast.makeText(this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         showInboundConfirmDialog();
     }
@@ -252,7 +275,10 @@ public class InboundActivity extends Activity {
     private void showInboundConfirmDialog() {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫入库")
-            .setMessage("托盘号：" + palletNo + "\n库位号：" + binCode + "\n库外站点：" + swapStation)
+            .setMessage("库外托盘：" + palletNo
+                + "\n库位号：" + binCode
+                + "\n库外站点：" + swapStation
+                + "\n存放库位：" + getStorageFloorText())
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -272,14 +298,20 @@ public class InboundActivity extends Activity {
             Toast.makeText(this, "库外站点无效", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (storageFirstFloor == null) {
+            Toast.makeText(this, "请先选择存放库位", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        Toast.makeText(this, "正在获取可用托盘...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "正在获取可用托盘和库位...", Toast.LENGTH_SHORT).show();
 
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     AvailablePallet availablePallet = wmsApiService.getAvailablePallet(outsideSite, InboundActivity.this);
+                    String selectedPalletType = resolvePalletTypeByOutsideSite(outsideSite);
+                    AvailableBin availableBin = wmsApiService.getAvailableBin(selectedPalletType, storageFirstFloor, InboundActivity.this);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -294,9 +326,20 @@ public class InboundActivity extends Activity {
                                 Toast.makeText(InboundActivity.this, "该库外站点未找到可用托盘", Toast.LENGTH_SHORT).show();
                                 return;
                             }
+                            if (availableBin == null || availableBin.getBinCode() == null
+                                || availableBin.getBinCode().isEmpty()) {
+                                palletNo = null;
+                                binCode = null;
+                                palletType = selectedPalletType;
+                                tvPalletNo.setText("--");
+                                tvLocationCode.setText("--");
+                                updateStatus(false);
+                                Toast.makeText(InboundActivity.this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
                             palletNo = availablePallet.getPalletNo();
-                            binCode = availablePallet.getBinCode();
-                            palletType = resolvePalletTypeByOutsideSite(outsideSite);
+                            binCode = availableBin.getBinCode();
+                            palletType = selectedPalletType;
                             inboundSubmitted = false;
                             tvPalletNo.setText(palletNo);
                             tvLocationCode.setText(binCode);
@@ -308,7 +351,7 @@ public class InboundActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(InboundActivity.this, "查询托盘失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(InboundActivity.this, "查询托盘/库位失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                             if (!isPalletScanEnabled) {
                                 palletNo = null;
                                 binCode = null;
@@ -322,7 +365,54 @@ public class InboundActivity extends Activity {
             }
         }).start();
     }
-    
+
+    private void fetchAvailableBinForCurrentSelection() {
+        if (storageFirstFloor == null || palletType == null || palletType.isEmpty()) {
+            binCode = null;
+            tvLocationCode.setText("--");
+            updateStatus(false);
+            return;
+        }
+
+        Toast.makeText(this, "正在获取可用库位...", Toast.LENGTH_SHORT).show();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    AvailableBin availableBin = wmsApiService.getAvailableBin(palletType, storageFirstFloor, InboundActivity.this);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (availableBin == null || availableBin.getBinCode() == null
+                                || availableBin.getBinCode().isEmpty()) {
+                                binCode = null;
+                                tvLocationCode.setText("--");
+                                updateStatus(false);
+                                Toast.makeText(InboundActivity.this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            binCode = availableBin.getBinCode();
+                            tvLocationCode.setText(binCode);
+                            updateStatus(palletNo != null && !palletNo.isEmpty());
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            binCode = null;
+                            tvLocationCode.setText("--");
+                            updateStatus(false);
+                            Toast.makeText(InboundActivity.this, "查询库位失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
+
     /**
      * 执行呼叫入库
      */
@@ -351,6 +441,7 @@ public class InboundActivity extends Activity {
                     params.put("palletNo", palletNo);
                     params.put("fromBinCode", swapStation);
                     params.put("toBinCode", binCode);
+                    params.put("firstFloor", storageFirstFloor != null && storageFirstFloor ? "true" : "false");
                     if (matCode != null) {
                         params.put("matCode", matCode);
                     }
@@ -412,6 +503,7 @@ public class InboundActivity extends Activity {
         if (isPalletScanEnabled) {
             palletType = null;
             updateInboundStationSelection(null);
+            updateStorageFloorSelection(null);
         } else if (swapStation != null && !swapStation.isEmpty()) {
             fetchAvailablePallet(swapStation);
         }
@@ -438,23 +530,87 @@ public class InboundActivity extends Activity {
                 break;
             }
         }
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(24, 8, 24, 0);
+
+        TextView stationTitle = new TextView(this);
+        stationTitle.setText("库外站点");
+        stationTitle.setTextSize(16);
+        content.addView(stationTitle);
+
+        RadioGroup stationGroup = new RadioGroup(this);
+        stationGroup.setOrientation(RadioGroup.VERTICAL);
+        final int stationIdBase = 1000;
+        for (int i = 0; i < stations.length; i++) {
+            RadioButton item = new RadioButton(this);
+            item.setId(stationIdBase + i);
+            item.setText(stations[i]);
+            item.setTextSize(16);
+            stationGroup.addView(item);
+            if (i == selectedIndex) {
+                stationGroup.check(item.getId());
+            }
+        }
+        content.addView(stationGroup);
+
+        TextView floorTitle = new TextView(this);
+        floorTitle.setText("存放库位");
+        floorTitle.setTextSize(16);
+        floorTitle.setPadding(0, 16, 0, 0);
+        content.addView(floorTitle);
+
+        RadioGroup floorGroup = new RadioGroup(this);
+        floorGroup.setOrientation(RadioGroup.VERTICAL);
+        final int firstFloorId = 2001;
+        final int upperFloorId = 2002;
+        RadioButton firstFloor = new RadioButton(this);
+        firstFloor.setId(firstFloorId);
+        firstFloor.setText("存放在一层");
+        firstFloor.setTextSize(16);
+        floorGroup.addView(firstFloor);
+        RadioButton upperFloor = new RadioButton(this);
+        upperFloor.setId(upperFloorId);
+        upperFloor.setText("存放在二/三层");
+        upperFloor.setTextSize(16);
+        floorGroup.addView(upperFloor);
+        if (storageFirstFloor != null) {
+            floorGroup.check(storageFirstFloor ? firstFloorId : upperFloorId);
+        }
+        content.addView(floorGroup);
+
         new AlertDialog.Builder(this)
             .setTitle("选择库外站点")
-            .setSingleChoiceItems(stations, selectedIndex, null)
+            .setView(content)
             .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
-                    AlertDialog alert = (AlertDialog) dialog;
-                    int index = alert.getListView().getCheckedItemPosition();
+                    int stationCheckedId = stationGroup.getCheckedRadioButtonId();
+                    int index = stationCheckedId - stationIdBase;
+                    int floorCheckedId = floorGroup.getCheckedRadioButtonId();
+                    if (floorCheckedId != firstFloorId && floorCheckedId != upperFloorId) {
+                        Toast.makeText(InboundActivity.this, "请选择存放库位", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     if (index >= 0 && index < stations.length) {
                         String station = stations[index];
+                        boolean selectedFirstFloor = floorCheckedId == firstFloorId;
                         updateInboundStationSelection(station);
+                        updateStorageFloorSelection(selectedFirstFloor);
                         if (!isPalletScanEnabled) {
                             fetchAvailablePallet(station);
                         } else if (!isInboundStationAllowed(station)) {
                             Toast.makeText(InboundActivity.this, "当前托盘类型不支持该库外站点", Toast.LENGTH_SHORT).show();
                             updateInboundStationSelection(null);
+                            updateStorageFloorSelection(null);
+                        } else {
+                            if (palletType == null || palletType.isEmpty()) {
+                                palletType = resolvePalletTypeByOutsideSite(station);
+                            }
+                            fetchAvailableBinForCurrentSelection();
                         }
+                    } else {
+                        Toast.makeText(InboundActivity.this, "请选择库外站点", Toast.LENGTH_SHORT).show();
                     }
                 }
             })
@@ -470,12 +626,18 @@ public class InboundActivity extends Activity {
         String[] stations = getInboundStationOptions();
         if (stations.length == 1) {
             updateInboundStationSelection(stations[0]);
+            if (storageFirstFloor != null) {
+                fetchAvailableBinForCurrentSelection();
+            }
             return;
         }
         if (!isInboundStationAllowed(swapStation)) {
             updateInboundStationSelection(null);
         } else {
             updateInboundStationSelection(swapStation);
+        }
+        if (swapStation != null && !swapStation.isEmpty() && storageFirstFloor != null) {
+            fetchAvailableBinForCurrentSelection();
         }
     }
 
@@ -510,6 +672,18 @@ public class InboundActivity extends Activity {
         tvInboundStation.setText(station == null || station.isEmpty() ? "未选择" : station);
     }
 
+    private void updateStorageFloorSelection(Boolean firstFloor) {
+        storageFirstFloor = firstFloor;
+        tvStorageFloor.setText(getStorageFloorText());
+    }
+
+    private String getStorageFloorText() {
+        if (storageFirstFloor == null) {
+            return "未选择";
+        }
+        return storageFirstFloor ? "一层" : "二/三层";
+    }
+
     private String resolvePalletTypeByOutsideSite(String outsideSite) {
         if (outsideSite == null || outsideSite.isEmpty()) {
             return null;
@@ -518,7 +692,7 @@ public class InboundActivity extends Activity {
     }
 
     private void updateStepLabels() {
-        btnSelectInboundStation.setText("1. 选择库外站点");
+        btnSelectInboundStation.setText("1. 选择库外站点/存放库位");
         btnBindValve.setText(isPalletScanEnabled ? "3. 样品绑定" : "2. 样品绑定");
         btnCallInbound.setText(isPalletScanEnabled ? "4. 呼叫入库" : "3. 呼叫入库");
         callInboundLabel = btnCallInbound.getText();
@@ -596,6 +770,7 @@ public class InboundActivity extends Activity {
                                 if (isPalletScanEnabled) {
                                     palletType = null;
                                     updateInboundStationSelection(null);
+                                    updateStorageFloorSelection(null);
                                 } else {
                                     palletType = resolvePalletTypeByOutsideSite(swapStation);
                                 }

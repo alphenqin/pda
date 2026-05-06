@@ -58,7 +58,7 @@
             <TextView
                 android:layout_width="96dp"
                 android:layout_height="wrap_content"
-                android:text="托盘号："
+                android:text="库外托盘："
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
@@ -69,6 +69,30 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="--"
+                android:textSize="16sp"
+                android:textColor="@color/text_secondary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="96dp"
+                android:layout_height="wrap_content"
+                android:text="存放库位："
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+
+            <TextView
+                android:id="@+id/tvStorageFloor"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="未选择"
                 android:textSize="16sp"
                 android:textColor="@color/text_secondary" />
         </LinearLayout>
@@ -161,7 +185,7 @@
             android:layout_width="match_parent"
             android:layout_height="78dp"
             android:layout_marginBottom="12dp"
-            android:text="1. 选择库外站点"
+            android:text="1. 选择库外站点/存放库位"
             android:textSize="19sp"
             android:textStyle="bold"
             android:background="@drawable/btn_teal"
