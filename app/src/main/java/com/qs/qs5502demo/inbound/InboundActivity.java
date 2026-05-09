@@ -17,7 +17,6 @@ import android.widget.Toast;
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
 import com.qs.qs5502demo.model.AvailableBin;
-import com.qs.qs5502demo.model.AvailablePallet;
 import com.qs.qs5502demo.model.Pallet;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
@@ -57,7 +56,7 @@ public class InboundActivity extends Activity {
     private String binCode;
     private String swapStation;
     private String palletType;
-    private Boolean storageFirstFloor;
+    private Integer storageLevel;
     private String matCode;  // 阀门物料编码
     private boolean isValveBound = false;  // 阀门是否已绑定
     private boolean isPalletScanEnabled = true;
@@ -96,7 +95,7 @@ public class InboundActivity extends Activity {
         btnBack = (Button) findViewById(R.id.btnBack);
         callInboundLabel = btnCallInbound.getText();
         
-        isPalletScanEnabled = PreferenceUtil.getWmsPalletScanEnabled(this);
+        isPalletScanEnabled = false;
         togglePalletEntryMode(isPalletScanEnabled);
         updateStepLabels();
 
@@ -132,12 +131,7 @@ public class InboundActivity extends Activity {
         btnBindValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (palletNo == null || palletNo.isEmpty()) {
-                    String msg = isPalletScanEnabled ? "请先完成托盘扫码" : "请先选择库外站点";
-                    Toast.makeText(InboundActivity.this, msg, Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                if (storageFirstFloor == null) {
+                if (storageLevel == null) {
                     Toast.makeText(InboundActivity.this, "请先选择存放库位", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -246,8 +240,7 @@ public class InboundActivity extends Activity {
      */
     private void callInbound() {
         if (palletNo == null || palletNo.isEmpty()) {
-            String msg = isPalletScanEnabled ? "请先完成托盘扫码" : "请先选择库外站点";
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先选择库外站点", Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -260,7 +253,7 @@ public class InboundActivity extends Activity {
             Toast.makeText(this, "请先选择库外站点", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (storageFirstFloor == null) {
+        if (storageLevel == null) {
             Toast.makeText(this, "请先选择存放库位", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -275,7 +268,7 @@ public class InboundActivity extends Activity {
     private void showInboundConfirmDialog() {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫入库")
-            .setMessage("库外托盘：" + palletNo
+            .setMessage("库位编号：" + binCode
                 + "\n库位号：" + binCode
                 + "\n库外站点：" + swapStation
                 + "\n存放库位：" + getStorageFloorText())
@@ -293,39 +286,27 @@ public class InboundActivity extends Activity {
         layoutScanPallet.setVisibility(enableScan ? View.VISIBLE : View.GONE);
     }
 
-    private void fetchAvailablePallet(String outsideSite) {
+    private void fetchAvailableBinForStation(String outsideSite) {
         if (outsideSite == null || outsideSite.isEmpty()) {
             Toast.makeText(this, "库外站点无效", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (storageFirstFloor == null) {
+        if (storageLevel == null) {
             Toast.makeText(this, "请先选择存放库位", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Toast.makeText(this, "正在获取可用托盘和库位...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "正在获取可用库位...", Toast.LENGTH_SHORT).show();
 
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    AvailablePallet availablePallet = wmsApiService.getAvailablePallet(outsideSite, InboundActivity.this);
                     String selectedPalletType = resolvePalletTypeByOutsideSite(outsideSite);
-                    AvailableBin availableBin = wmsApiService.getAvailableBin(selectedPalletType, storageFirstFloor, InboundActivity.this);
+                    AvailableBin availableBin = wmsApiService.getAvailableBin(selectedPalletType, storageLevel, InboundActivity.this);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (availablePallet == null || availablePallet.getPalletNo() == null
-                                || availablePallet.getPalletNo().isEmpty()) {
-                                palletNo = null;
-                                binCode = null;
-                                palletType = resolvePalletTypeByOutsideSite(outsideSite);
-                                tvPalletNo.setText("--");
-                                tvLocationCode.setText("--");
-                                updateStatus(false);
-                                Toast.makeText(InboundActivity.this, "该库外站点未找到可用托盘", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
                             if (availableBin == null || availableBin.getBinCode() == null
                                 || availableBin.getBinCode().isEmpty()) {
                                 palletNo = null;
@@ -337,11 +318,11 @@ public class InboundActivity extends Activity {
                                 Toast.makeText(InboundActivity.this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
                                 return;
                             }
-                            palletNo = availablePallet.getPalletNo();
                             binCode = availableBin.getBinCode();
+                            palletNo = binCode;
                             palletType = selectedPalletType;
                             inboundSubmitted = false;
-                            tvPalletNo.setText(palletNo);
+                            tvPalletNo.setText(binCode);
                             tvLocationCode.setText(binCode);
                             updateStatus(true);
                         }
@@ -351,7 +332,7 @@ public class InboundActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(InboundActivity.this, "查询托盘/库位失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(InboundActivity.this, "查询库位失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
                             if (!isPalletScanEnabled) {
                                 palletNo = null;
                                 binCode = null;
@@ -367,7 +348,7 @@ public class InboundActivity extends Activity {
     }
 
     private void fetchAvailableBinForCurrentSelection() {
-        if (storageFirstFloor == null || palletType == null || palletType.isEmpty()) {
+        if (storageLevel == null || palletType == null || palletType.isEmpty()) {
             binCode = null;
             tvLocationCode.setText("--");
             updateStatus(false);
@@ -380,7 +361,7 @@ public class InboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    AvailableBin availableBin = wmsApiService.getAvailableBin(palletType, storageFirstFloor, InboundActivity.this);
+                    AvailableBin availableBin = wmsApiService.getAvailableBin(palletType, storageLevel, InboundActivity.this);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -393,8 +374,10 @@ public class InboundActivity extends Activity {
                                 return;
                             }
                             binCode = availableBin.getBinCode();
+                            palletNo = binCode;
                             tvLocationCode.setText(binCode);
-                            updateStatus(palletNo != null && !palletNo.isEmpty());
+                            tvPalletNo.setText(binCode);
+                            updateStatus(true);
                         }
                     });
                 } catch (Exception e) {
@@ -441,7 +424,7 @@ public class InboundActivity extends Activity {
                     params.put("palletNo", palletNo);
                     params.put("fromBinCode", swapStation);
                     params.put("toBinCode", binCode);
-                    params.put("firstFloor", storageFirstFloor != null && storageFirstFloor ? "true" : "false");
+                    params.put("storageLevel", String.valueOf(storageLevel));
                     if (matCode != null) {
                         params.put("matCode", matCode);
                     }
@@ -505,7 +488,7 @@ public class InboundActivity extends Activity {
             updateInboundStationSelection(null);
             updateStorageFloorSelection(null);
         } else if (swapStation != null && !swapStation.isEmpty()) {
-            fetchAvailablePallet(swapStation);
+            fetchAvailableBinForStation(swapStation);
         }
         updateStatus(false);
     }
@@ -563,19 +546,31 @@ public class InboundActivity extends Activity {
         RadioGroup floorGroup = new RadioGroup(this);
         floorGroup.setOrientation(RadioGroup.VERTICAL);
         final int firstFloorId = 2001;
-        final int upperFloorId = 2002;
+        final int secondFloorId = 2002;
+        final int thirdFloorId = 2003;
         RadioButton firstFloor = new RadioButton(this);
         firstFloor.setId(firstFloorId);
         firstFloor.setText("存放在一层");
         firstFloor.setTextSize(16);
         floorGroup.addView(firstFloor);
-        RadioButton upperFloor = new RadioButton(this);
-        upperFloor.setId(upperFloorId);
-        upperFloor.setText("存放在二/三层");
-        upperFloor.setTextSize(16);
-        floorGroup.addView(upperFloor);
-        if (storageFirstFloor != null) {
-            floorGroup.check(storageFirstFloor ? firstFloorId : upperFloorId);
+        RadioButton secondFloor = new RadioButton(this);
+        secondFloor.setId(secondFloorId);
+        secondFloor.setText("存放在二层");
+        secondFloor.setTextSize(16);
+        floorGroup.addView(secondFloor);
+        RadioButton thirdFloor = new RadioButton(this);
+        thirdFloor.setId(thirdFloorId);
+        thirdFloor.setText("存放在三层");
+        thirdFloor.setTextSize(16);
+        floorGroup.addView(thirdFloor);
+        if (storageLevel != null) {
+            if (storageLevel == 1) {
+                floorGroup.check(firstFloorId);
+            } else if (storageLevel == 2) {
+                floorGroup.check(secondFloorId);
+            } else if (storageLevel == 3) {
+                floorGroup.check(thirdFloorId);
+            }
         }
         content.addView(floorGroup);
 
@@ -588,17 +583,17 @@ public class InboundActivity extends Activity {
                     int stationCheckedId = stationGroup.getCheckedRadioButtonId();
                     int index = stationCheckedId - stationIdBase;
                     int floorCheckedId = floorGroup.getCheckedRadioButtonId();
-                    if (floorCheckedId != firstFloorId && floorCheckedId != upperFloorId) {
+                    if (floorCheckedId != firstFloorId && floorCheckedId != secondFloorId && floorCheckedId != thirdFloorId) {
                         Toast.makeText(InboundActivity.this, "请选择存放库位", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     if (index >= 0 && index < stations.length) {
                         String station = stations[index];
-                        boolean selectedFirstFloor = floorCheckedId == firstFloorId;
+                        int selectedStorageLevel = floorCheckedId == firstFloorId ? 1 : (floorCheckedId == secondFloorId ? 2 : 3);
                         updateInboundStationSelection(station);
-                        updateStorageFloorSelection(selectedFirstFloor);
+                        updateStorageFloorSelection(selectedStorageLevel);
                         if (!isPalletScanEnabled) {
-                            fetchAvailablePallet(station);
+                            fetchAvailableBinForStation(station);
                         } else if (!isInboundStationAllowed(station)) {
                             Toast.makeText(InboundActivity.this, "当前托盘类型不支持该库外站点", Toast.LENGTH_SHORT).show();
                             updateInboundStationSelection(null);
@@ -626,7 +621,7 @@ public class InboundActivity extends Activity {
         String[] stations = getInboundStationOptions();
         if (stations.length == 1) {
             updateInboundStationSelection(stations[0]);
-            if (storageFirstFloor != null) {
+            if (storageLevel != null) {
                 fetchAvailableBinForCurrentSelection();
             }
             return;
@@ -636,7 +631,7 @@ public class InboundActivity extends Activity {
         } else {
             updateInboundStationSelection(swapStation);
         }
-        if (swapStation != null && !swapStation.isEmpty() && storageFirstFloor != null) {
+        if (swapStation != null && !swapStation.isEmpty() && storageLevel != null) {
             fetchAvailableBinForCurrentSelection();
         }
     }
@@ -672,16 +667,25 @@ public class InboundActivity extends Activity {
         tvInboundStation.setText(station == null || station.isEmpty() ? "未选择" : formatInboundStationLabel(station));
     }
 
-    private void updateStorageFloorSelection(Boolean firstFloor) {
-        storageFirstFloor = firstFloor;
+    private void updateStorageFloorSelection(Integer level) {
+        storageLevel = level;
         tvStorageFloor.setText(getStorageFloorText());
     }
 
     private String getStorageFloorText() {
-        if (storageFirstFloor == null) {
+        if (storageLevel == null) {
             return "未选择";
         }
-        return storageFirstFloor ? "一层" : "二/三层";
+        if (storageLevel == 1) {
+            return "一层";
+        }
+        if (storageLevel == 2) {
+            return "二层";
+        }
+        if (storageLevel == 3) {
+            return "三层";
+        }
+        return "未选择";
     }
 
     private String formatInboundStationLabel(String station) {
@@ -709,8 +713,8 @@ public class InboundActivity extends Activity {
 
     private void updateStepLabels() {
         btnSelectInboundStation.setText("1. 选择库外站点/存放库位");
-        btnBindValve.setText(isPalletScanEnabled ? "3. 样品绑定" : "2. 样品绑定");
-        btnCallInbound.setText(isPalletScanEnabled ? "4. 呼叫入库" : "3. 呼叫入库");
+        btnBindValve.setText("2. 样品绑定");
+        btnCallInbound.setText("3. 呼叫入库");
         callInboundLabel = btnCallInbound.getText();
         if (btnScanPallet != null) {
             btnScanPallet.setText("2. 托盘扫码");
@@ -794,7 +798,7 @@ public class InboundActivity extends Activity {
                                 tvLocationCode.setText("--");
                                 updateStatus(false);
                                 if (!isPalletScanEnabled && swapStation != null && !swapStation.isEmpty()) {
-                                    fetchAvailablePallet(swapStation);
+                                    fetchAvailableBinForStation(swapStation);
                                 }
                                 Toast.makeText(InboundActivity.this, "已取消绑定", Toast.LENGTH_SHORT).show();
                                 if (afterCancelAction != null) {
@@ -836,13 +840,13 @@ public class InboundActivity extends Activity {
     protected void onResume() {
         super.onResume();
         startInboundLockPolling();
-        boolean enabled = PreferenceUtil.getWmsPalletScanEnabled(this);
+        boolean enabled = false;
         if (enabled != isPalletScanEnabled) {
             isPalletScanEnabled = enabled;
             togglePalletEntryMode(isPalletScanEnabled);
             updateStepLabels();
             if (!isPalletScanEnabled && swapStation != null && !swapStation.isEmpty()) {
-                fetchAvailablePallet(swapStation);
+                fetchAvailableBinForStation(swapStation);
             }
         }
     }

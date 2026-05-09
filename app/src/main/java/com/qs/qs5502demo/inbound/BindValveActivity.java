@@ -46,7 +46,7 @@ public class BindValveActivity extends Activity {
         }
         
         if (palletNo == null || palletNo.isEmpty()) {
-            Toast.makeText(this, "托盘号无效，请返回重新扫码", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "库位编号无效，请返回重新选择", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }

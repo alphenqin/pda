@@ -59,7 +59,7 @@ public class LoginActivity extends Activity {
         
         // 设置默认值
         etUsername.setText("admin");
-        etPassword.setText("111111");
+        etPassword.setText("000000");
         etDeviceCode.setText("PDA-01");
     }
     

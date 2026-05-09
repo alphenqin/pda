@@ -95,14 +95,14 @@ public class WmsApiService {
         return getAvailableBin(null, null, context);
     }
 
-    public AvailableBin getAvailableBin(String palletType, Boolean firstFloor, Context context) throws IOException {
+    public AvailableBin getAvailableBin(String palletType, Integer storageLevel, Context context) throws IOException {
         String url = getBaseUrl() + "/bin/available";
         Map<String, Object> request = new HashMap<>();
         if (palletType != null && !palletType.isEmpty()) {
             request.put("palletType", palletType);
         }
-        if (firstFloor != null) {
-            request.put("firstFloor", firstFloor);
+        if (storageLevel != null) {
+            request.put("storageLevel", storageLevel);
         }
         String response = HttpUtil.post(url, HttpUtil.toJson(request), context);
 

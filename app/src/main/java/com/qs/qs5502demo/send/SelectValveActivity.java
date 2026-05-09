@@ -28,7 +28,6 @@ public class SelectValveActivity extends Activity {
 
     private static final int VALVE_QUERY_PAGE_SIZE = 100;
     
-    private EditText etVendorName;
     private EditText etValveNo;
     private EditText etInboundDate;
     private Button btnSearch;
@@ -55,7 +54,6 @@ public class SelectValveActivity extends Activity {
     }
     
     private void initViews() {
-        etVendorName = (EditText) findViewById(R.id.etVendorName);
         etValveNo = (EditText) findViewById(R.id.etValveNo);
         etInboundDate = (EditText) findViewById(R.id.etInboundDate);
         btnSearch = (Button) findViewById(R.id.btnSearch);
@@ -98,13 +96,9 @@ public class SelectValveActivity extends Activity {
     private void searchValves() {
         // 构建查询参数
         final Map<String, String> params = new HashMap<String, String>();
-        String vendorName = etVendorName.getText().toString().trim();
         String valveNo = etValveNo.getText().toString().trim();
         String inboundDate = etInboundDate.getText().toString().trim();
-        
-        if (!vendorName.isEmpty()) {
-            params.put("vendorName", vendorName);
-        }
+
         if (!valveNo.isEmpty()) {
             params.put("valveNo", valveNo);
         }
@@ -118,8 +112,10 @@ public class SelectValveActivity extends Activity {
         // 根据任务类型设置阀门状态筛选
         String taskType = getIntent().getStringExtra("taskType");
         if (taskType != null) {
-            if ("SEND_INSPECTION".equals(taskType) || "OUTBOUND".equals(taskType)) {
-                params.put("valveStatus", "IN_STOCK"); // 送检和出库只查询在库的
+            if ("SEND_INSPECTION".equals(taskType)) {
+                params.put("valveStatus", "IN_STOCK"); // 送检只查询在库的
+            } else if ("OUTBOUND".equals(taskType)) {
+                params.put("valveStatus", "IN_STOCK,INSPECTED"); // 出库查询在库和已检测的
             } else if ("RETURN".equals(taskType)) {
                 params.put("valveStatus", "INSPECTED"); // 回库只查询已检测的
             }
@@ -235,7 +231,6 @@ public class SelectValveActivity extends Activity {
         class ViewHolder extends RecyclerView.ViewHolder {
             RadioButton rbSelected;
             TextView tvValveNo;
-            TextView tvVendorName;
             TextView tvPalletInfo;
             TextView tvInboundDate;
             
@@ -243,7 +238,6 @@ public class SelectValveActivity extends Activity {
                 super(itemView);
                 rbSelected = (RadioButton) itemView.findViewById(R.id.rbSelected);
                 tvValveNo = (TextView) itemView.findViewById(R.id.tvValveNo);
-                tvVendorName = (TextView) itemView.findViewById(R.id.tvVendorName);
                 tvPalletInfo = (TextView) itemView.findViewById(R.id.tvPalletInfo);
                 tvInboundDate = (TextView) itemView.findViewById(R.id.tvInboundDate);
                 
@@ -262,7 +256,6 @@ public class SelectValveActivity extends Activity {
             void bind(Valve valve, int position) {
                 rbSelected.setChecked(selectedValve == valve);
                 tvValveNo.setText("出厂编号：" + valve.getValveNo());
-                tvVendorName.setText("厂家：" + valve.getVendorName());
                 tvPalletInfo.setText("托盘：" + valve.getPalletNo() + "  库位：" + valve.getBinCode());
                 tvInboundDate.setText("入库日期：" + valve.getInboundDate());
             }
