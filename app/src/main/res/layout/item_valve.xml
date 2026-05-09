@@ -32,7 +32,7 @@
                 android:id="@+id/tvValveNo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="样品编号：V20250101-001"
+                android:text="出厂编号：V20250101-001"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#333333" />

@@ -142,7 +142,7 @@ public class OutboundActivity extends Activity {
         
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫出库")
-            .setMessage("样品编号：" + selectedValve.getValveNo() + 
+            .setMessage("出厂编号：" + selectedValve.getValveNo() +
                        "\n托盘号：" + palletNo + 
                        "\n库位号：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {

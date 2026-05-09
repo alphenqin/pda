@@ -24,7 +24,7 @@ public class Task implements Serializable {
     private String status;           // 任务状态
     private String createTime;       // 创建时间
     private String palletNo;         // 托盘号
-    private String valveNo;          // 阀门编号
+    private String valveNo;          // 出厂编号
     private String matCode;          // 物料编码
     private String binCode;          // 库位号，与调度系统 binCode 一致
     private String locationCode;     // 库位号（兼容旧字段）

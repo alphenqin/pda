@@ -29,7 +29,7 @@ public interface ApiService {
 
     /**
      * 根据条件查询阀门
-     * @param params 查询参数（厂家名称、阀门编号、入库日期等）
+     * @param params 查询参数（厂家名称、出厂编号、入库日期等）
      * @return 阀门列表
      */
     List<Valve> queryValves(Map<String, String> params);
@@ -41,7 +41,7 @@ public interface ApiService {
      * @param locationCode 库位号
      * @param fromStation 起始站点
      * @param toStation 目标站点
-     * @param valveNo 阀门编号（可选）
+     * @param valveNo 出厂编号（可选）
      * @return 任务信息（包含任务编号）
      */
     Task createTask(String taskType, String palletNo, String locationCode, 

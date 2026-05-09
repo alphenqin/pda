@@ -155,7 +155,7 @@ public class SendInspectionActivity extends Activity {
     private void showSendInspectionConfirm(String targetBinCode) {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫送检")
-            .setMessage("样品编号：" + selectedValve.getValveNo() +
+            .setMessage("出厂编号：" + selectedValve.getValveNo() +
                        "\n托盘号：" + palletNo +
                        "\n库位号：" + binCode +
                        "\n目标站点：" + targetBinCode)

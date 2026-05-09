@@ -25,6 +25,8 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.LinearLayoutManager;
 
 public class SelectValveActivity extends Activity {
+
+    private static final int VALVE_QUERY_PAGE_SIZE = 100;
     
     private EditText etVendorName;
     private EditText etValveNo;
@@ -110,9 +112,8 @@ public class SelectValveActivity extends Activity {
             params.put("inboundDate", inboundDate);
         }
         
-        // 添加分页参数
-        params.put("pageNum", "1");
-        params.put("pageSize", "20");
+        // PDA 列表没有分页控件，查询时一次拉取全部分页结果。
+        params.put("pageSize", String.valueOf(VALVE_QUERY_PAGE_SIZE));
         
         // 根据任务类型设置阀门状态筛选
         String taskType = getIntent().getStringExtra("taskType");
@@ -130,17 +131,16 @@ public class SelectValveActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    PageResponse<Valve> pageResponse = wmsApiService.queryValves(params, SelectValveActivity.this);
-                    
+                    final List<Valve> queryResult = queryAllValves(params);
+
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             valveList.clear();
-                            if (pageResponse != null && pageResponse.getList() != null) {
-                                valveList.addAll(pageResponse.getList());
-                            }
+                            selectedValve = null;
+                            valveList.addAll(queryResult);
                             adapter.notifyDataSetChanged();
-                            
+
                             if (valveList.isEmpty()) {
                                 Toast.makeText(SelectValveActivity.this, "未查询到数据", Toast.LENGTH_SHORT).show();
                             } else {
@@ -160,7 +160,39 @@ public class SelectValveActivity extends Activity {
             }
         }).start();
     }
-    
+
+    private List<Valve> queryAllValves(Map<String, String> baseParams) throws java.io.IOException {
+        List<Valve> result = new ArrayList<Valve>();
+        int pageNum = 1;
+        int total = -1;
+
+        while (true) {
+            Map<String, String> pageParams = new HashMap<String, String>(baseParams);
+            pageParams.put("pageNum", String.valueOf(pageNum));
+            pageParams.put("pageSize", String.valueOf(VALVE_QUERY_PAGE_SIZE));
+
+            PageResponse<Valve> pageResponse = wmsApiService.queryValves(pageParams, SelectValveActivity.this);
+            List<Valve> pageList = pageResponse != null ? pageResponse.getList() : null;
+            if (pageResponse != null) {
+                total = pageResponse.getTotal();
+            }
+            if (pageList == null || pageList.isEmpty()) {
+                break;
+            }
+
+            result.addAll(pageList);
+            if (total >= 0 && result.size() >= total) {
+                break;
+            }
+            if (pageList.size() < VALVE_QUERY_PAGE_SIZE) {
+                break;
+            }
+            pageNum++;
+        }
+
+        return result;
+    }
+
     /**
      * 确认选择
      */
@@ -229,7 +261,7 @@ public class SelectValveActivity extends Activity {
             
             void bind(Valve valve, int position) {
                 rbSelected.setChecked(selectedValve == valve);
-                tvValveNo.setText("样品编号：" + valve.getValveNo());
+                tvValveNo.setText("出厂编号：" + valve.getValveNo());
                 tvVendorName.setText("厂家：" + valve.getVendorName());
                 tvPalletInfo.setText("托盘：" + valve.getPalletNo() + "  库位：" + valve.getBinCode());
                 tvInboundDate.setText("入库日期：" + valve.getInboundDate());

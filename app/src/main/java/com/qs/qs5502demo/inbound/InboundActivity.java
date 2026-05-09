@@ -545,7 +545,7 @@ public class InboundActivity extends Activity {
         for (int i = 0; i < stations.length; i++) {
             RadioButton item = new RadioButton(this);
             item.setId(stationIdBase + i);
-            item.setText(stations[i]);
+            item.setText(formatInboundStationLabel(stations[i]));
             item.setTextSize(16);
             stationGroup.addView(item);
             if (i == selectedIndex) {
@@ -669,7 +669,7 @@ public class InboundActivity extends Activity {
 
     private void updateInboundStationSelection(String station) {
         swapStation = station;
-        tvInboundStation.setText(station == null || station.isEmpty() ? "未选择" : station);
+        tvInboundStation.setText(station == null || station.isEmpty() ? "未选择" : formatInboundStationLabel(station));
     }
 
     private void updateStorageFloorSelection(Boolean firstFloor) {
@@ -682,6 +682,22 @@ public class InboundActivity extends Activity {
             return "未选择";
         }
         return storageFirstFloor ? "一层" : "二/三层";
+    }
+
+    private String formatInboundStationLabel(String station) {
+        if (station == null || station.isEmpty()) {
+            return "未选择";
+        }
+        if (SMALL_LOAD_BIN_1.equals(station)
+            || SMALL_LOAD_BIN_2.equals(station)
+            || SMALL_LOAD_BIN_3.equals(station)
+            || SMALL_LOAD_BIN_4.equals(station)) {
+            return station + "(小托盘)";
+        }
+        if (LARGE_LOAD_BIN.equals(station)) {
+            return station + "(大托盘)";
+        }
+        return station;
     }
 
     private String resolvePalletTypeByOutsideSite(String outsideSite) {
