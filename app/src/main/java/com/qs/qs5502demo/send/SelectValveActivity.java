@@ -113,9 +113,9 @@ public class SelectValveActivity extends Activity {
         String taskType = getIntent().getStringExtra("taskType");
         if (taskType != null) {
             if ("SEND_INSPECTION".equals(taskType)) {
-                params.put("valveStatus", "IN_STOCK"); // 送检只查询在库的
+                params.put("valveStatus", "IN_STOCK"); // 送检只查询待检测的
             } else if ("OUTBOUND".equals(taskType)) {
-                params.put("valveStatus", "IN_STOCK,INSPECTED"); // 出库查询在库和已检测的
+                params.put("valveStatus", "IN_STOCK,INSPECTED"); // 出库查询待检测和已检测的
             } else if ("RETURN".equals(taskType)) {
                 params.put("valveStatus", "INSPECTED"); // 回库只查询已检测的
             }
