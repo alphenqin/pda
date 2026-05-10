@@ -124,22 +124,37 @@ public class SendInspectionActivity extends Activity {
      * 呼叫送检
      */
     private void callSendInspection() {
-        if (selectedValve == null || palletNo == null || palletNo.isEmpty()) {
+        if (selectedValve == null || isBlank(binCode)) {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String targetBinCode = resolveInspectionTargetBin(palletNo);
+        String targetBinCode = resolveInspectionTargetBin();
         if (targetBinCode == null) {
-            Toast.makeText(this, "托盘型号无法识别，无法确定送检站点", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "库位类型无法识别，无法确定送检站点", Toast.LENGTH_SHORT).show();
             return;
         }
 
         showSendInspectionConfirm(targetBinCode);
     }
 
-    private String resolveInspectionTargetBin(String palletNo) {
-        if (palletNo == null) {
+    private String resolveInspectionTargetBin() {
+        String targetByPallet = resolveInspectionTargetBinByPalletNo(palletNo);
+        if (targetByPallet != null) {
+            return targetByPallet;
+        }
+        String palletType = resolvePalletTypeByBinCode(binCode);
+        if ("large".equals(palletType)) {
+            return LARGE_PALLET_INSPECTION_BIN;
+        }
+        if ("small".equals(palletType)) {
+            return SMALL_PALLET_INSPECTION_BIN;
+        }
+        return null;
+    }
+
+    private String resolveInspectionTargetBinByPalletNo(String palletNo) {
+        if (isBlank(palletNo)) {
             return null;
         }
         String normalized = palletNo.trim().toLowerCase(Locale.getDefault());
@@ -152,11 +167,34 @@ public class SendInspectionActivity extends Activity {
         return null;
     }
 
+    private String resolvePalletTypeByBinCode(String binCode) {
+        Integer bay = extractBinBay(binCode);
+        if (bay == null) {
+            return null;
+        }
+        return bay >= 13 ? "large" : "small";
+    }
+
+    private Integer extractBinBay(String binCode) {
+        if (isBlank(binCode)) {
+            return null;
+        }
+        String[] parts = binCode.trim().split("-");
+        if (parts.length < 2) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(parts[1]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private void showSendInspectionConfirm(String targetBinCode) {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫送检")
             .setMessage("出厂编号：" + selectedValve.getValveNo() +
-                       "\n托盘号：" + palletNo +
+                       "\n托盘号：" + displayText(palletNo) +
                        "\n库位号：" + binCode +
                        "\n目标站点：" + targetBinCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
@@ -189,12 +227,15 @@ public class SendInspectionActivity extends Activity {
                 try {
                     // 生成任务编号
                     String outID = DateUtil.generateTaskNo("S");
-                    
+                    String effectivePalletNo = getEffectivePalletNo();
+
                     Map<String, String> params = new HashMap<>();
                     params.put("taskType", Task.TYPE_SEND_INSPECTION);
                     params.put("outID", outID);
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(SendInspectionActivity.this));
-                    params.put("palletNo", palletNo);
+                    if (!isBlank(effectivePalletNo)) {
+                        params.put("palletNo", effectivePalletNo);
+                    }
                     params.put("fromBinCode", binCode);
                     params.put("toBinCode", targetBinCode);
                     if (selectedValve != null && selectedValve.getValveNo() != null) {
@@ -280,13 +321,14 @@ public class SendInspectionActivity extends Activity {
                 try {
                     // 生成任务编号
                     String outID = DateUtil.generateTaskNo("H");
-                    
+                    String effectivePalletNo = getEffectivePalletNo();
+
                     Map<String, String> params = new HashMap<>();
                     params.put("taskType", Task.TYPE_RETURN);
                     params.put("outID", outID);
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(SendInspectionActivity.this));
-                    if (palletNo != null) {
-                        params.put("palletNo", palletNo);
+                    if (!isBlank(effectivePalletNo)) {
+                        params.put("palletNo", effectivePalletNo);
                     }
                     params.put("fromBinCode", binCode);
                     params.put("toBinCode", binCode);
@@ -536,12 +578,31 @@ public class SendInspectionActivity extends Activity {
             updateStatus(false);
             return;
         }
-        palletNo = selectedValve.getPalletNo();
-        binCode = selectedValve.getBinCode();
-        matCode = selectedValve.getMatCode();
-        tvPalletNo.setText(palletNo != null && !palletNo.isEmpty() ? palletNo : "--");
-        tvLocationCode.setText(binCode != null && !binCode.isEmpty() ? binCode : "--");
-        updateStatus((palletNo != null && !palletNo.isEmpty()) || (binCode != null && !binCode.isEmpty()));
+        palletNo = trimToNull(selectedValve.getPalletNo());
+        binCode = trimToNull(selectedValve.getBinCode());
+        matCode = trimToNull(selectedValve.getMatCode());
+        tvPalletNo.setText(displayText(palletNo));
+        tvLocationCode.setText(displayText(binCode));
+        updateStatus(!isBlank(binCode));
+    }
+
+    private String getEffectivePalletNo() {
+        if (!isBlank(palletNo)) {
+            return palletNo;
+        }
+        return binCode;
+    }
+
+    private String displayText(String value) {
+        return isBlank(value) ? "--" : value;
+    }
+
+    private String trimToNull(String value) {
+        return isBlank(value) ? null : value.trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private void persistSelectedValve() {

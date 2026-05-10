@@ -134,16 +134,17 @@ public class ReturnWarehouseActivity extends Activity {
             Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (selectedValve == null || palletNo == null || palletNo.isEmpty()) {
+        if (selectedValve == null || isBlank(binCode)) {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
-        String palletType = resolvePalletTypeCode(palletNo);
+        String effectivePalletNo = getEffectivePalletNo();
+        String palletType = resolvePalletTypeCode(effectivePalletNo);
         if (palletType == null) {
             Toast.makeText(this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
             return;
         }
-        String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+        String returnOutsideSite = resolveReturnOutsideSite(effectivePalletNo);
         if (returnOutsideSite == null) {
             Toast.makeText(this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
             return;
@@ -175,7 +176,8 @@ public class ReturnWarehouseActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    String palletType = resolvePalletTypeCode(palletNo);
+                    String effectivePalletNo = getEffectivePalletNo();
+                    String palletType = resolvePalletTypeCode(effectivePalletNo);
                     if (palletType == null) {
                         runOnUiThread(new Runnable() {
                             @Override
@@ -185,7 +187,7 @@ public class ReturnWarehouseActivity extends Activity {
                         });
                         return;
                     }
-                    String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+                    String returnOutsideSite = resolveReturnOutsideSite(effectivePalletNo);
                     if (returnOutsideSite == null) {
                         runOnUiThread(new Runnable() {
                             @Override
@@ -209,7 +211,7 @@ public class ReturnWarehouseActivity extends Activity {
                     params.put("taskType", Task.TYPE_RETURN);
                     params.put("outID", outId);
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    params.put("palletNo", palletNo);
+                    params.put("palletNo", effectivePalletNo);
                     params.put("fromBinCode", binCode);
                     params.put("toBinCode", returnOutsideSite);
                     params.put("remark", "RETURN_CALL_PALLET");
@@ -274,11 +276,11 @@ public class ReturnWarehouseActivity extends Activity {
      * 阀门回库
      */
     private void callValveReturn() {
-        if (binCode == null || binCode.isEmpty()) {
+        if (isBlank(binCode)) {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
-        String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+        String returnOutsideSite = resolveReturnOutsideSite(getEffectivePalletNo());
         if (returnOutsideSite == null) {
             Toast.makeText(this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
             return;
@@ -312,7 +314,8 @@ public class ReturnWarehouseActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    String palletType = resolvePalletTypeCode(palletNo);
+                    String effectivePalletNo = getEffectivePalletNo();
+                    String palletType = resolvePalletTypeCode(effectivePalletNo);
                     if (palletType == null) {
                         runOnUiThread(new Runnable() {
                             @Override
@@ -322,7 +325,7 @@ public class ReturnWarehouseActivity extends Activity {
                         });
                         return;
                     }
-                    String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+                    String returnOutsideSite = resolveReturnOutsideSite(effectivePalletNo);
                     if (returnOutsideSite == null) {
                         runOnUiThread(new Runnable() {
                             @Override
@@ -346,7 +349,7 @@ public class ReturnWarehouseActivity extends Activity {
                     params.put("taskType", Task.TYPE_RETURN);
                     params.put("outID", outId);
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    params.put("palletNo", palletNo);
+                    params.put("palletNo", effectivePalletNo);
                     params.put("fromBinCode", returnOutsideSite);
                     params.put("toBinCode", binCode);
                     if (matCode != null) {
@@ -517,13 +520,10 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private String resolvePalletTypeCode(String palletNo) {
-        if (palletNo == null) {
+        if (isBlank(palletNo)) {
             return null;
         }
         String normalized = palletNo.trim();
-        if (normalized.isEmpty()) {
-            return null;
-        }
         String lower = normalized.toLowerCase();
         if (lower.contains("t1")) {
             return PALLET_TYPE_SMALL;
@@ -538,7 +538,34 @@ public class ReturnWarehouseActivity extends Activity {
         if (first == 'd') {
             return PALLET_TYPE_LARGE;
         }
+        String typeByBin = resolvePalletTypeCodeByBinCode(palletNo);
+        if (typeByBin != null) {
+            return typeByBin;
+        }
         return null;
+    }
+
+    private String resolvePalletTypeCodeByBinCode(String binCode) {
+        Integer bay = extractBinBay(binCode);
+        if (bay == null) {
+            return null;
+        }
+        return bay >= 13 ? PALLET_TYPE_LARGE : PALLET_TYPE_SMALL;
+    }
+
+    private Integer extractBinBay(String binCode) {
+        if (isBlank(binCode)) {
+            return null;
+        }
+        String[] parts = binCode.trim().split("-");
+        if (parts.length < 2) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(parts[1]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private String resolveReturnOutsideSite(String palletNo) {
@@ -559,17 +586,36 @@ public class ReturnWarehouseActivity extends Activity {
             // 获取选中的阀门信息
             selectedValve = (Valve) data.getSerializableExtra("valve");
             if (selectedValve != null) {
-                palletNo = selectedValve.getPalletNo();
-                binCode = selectedValve.getBinCode();
-                matCode = selectedValve.getMatCode();
-                String returnOutsideSite = resolveReturnOutsideSite(palletNo);
+                palletNo = trimToNull(selectedValve.getPalletNo());
+                binCode = trimToNull(selectedValve.getBinCode());
+                matCode = trimToNull(selectedValve.getMatCode());
+                String returnOutsideSite = resolveReturnOutsideSite(getEffectivePalletNo());
                 inspectionTargetBin = returnOutsideSite != null ? returnOutsideSite : selectedValve.getInspectionTargetBin();
-                
-                tvPalletNo.setText(palletNo);
-                tvLocationCode.setText(binCode);
-                updateStatus(true);
+
+                tvPalletNo.setText(displayText(palletNo));
+                tvLocationCode.setText(displayText(binCode));
+                updateStatus(!isBlank(binCode));
             }
         }
+    }
+
+    private String getEffectivePalletNo() {
+        if (!isBlank(palletNo)) {
+            return palletNo;
+        }
+        return binCode;
+    }
+
+    private String displayText(String value) {
+        return isBlank(value) ? "--" : value;
+    }
+
+    private String trimToNull(String value) {
+        return isBlank(value) ? null : value.trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     @Override

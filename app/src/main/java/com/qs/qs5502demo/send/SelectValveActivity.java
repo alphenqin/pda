@@ -256,10 +256,13 @@ public class SelectValveActivity extends Activity {
             void bind(Valve valve, int position) {
                 rbSelected.setChecked(selectedValve == valve);
                 tvValveNo.setText("出厂编号：" + valve.getValveNo());
-                tvPalletInfo.setText("托盘：" + valve.getPalletNo() + "  库位：" + valve.getBinCode());
+                tvPalletInfo.setText("库位：" + displayText(valve.getBinCode()));
                 tvInboundDate.setText("入库日期：" + valve.getInboundDate());
             }
         }
     }
-}
 
+    private String displayText(String value) {
+        return value == null || value.trim().isEmpty() ? "--" : value;
+    }
+}

@@ -135,7 +135,7 @@ public class OutboundActivity extends Activity {
             Toast.makeText(this, "空托回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (selectedValve == null || palletNo == null || palletNo.isEmpty()) {
+        if (selectedValve == null || isBlank(binCode)) {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -143,7 +143,7 @@ public class OutboundActivity extends Activity {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫出库")
             .setMessage("出厂编号：" + selectedValve.getValveNo() +
-                       "\n托盘号：" + palletNo + 
+                       "\n托盘号：" + displayText(palletNo) +
                        "\n库位号：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
@@ -173,13 +173,19 @@ public class OutboundActivity extends Activity {
                         }
                     });
                     String outId = DateUtil.generateTaskNo("C");
+                    String effectivePalletNo = getEffectivePalletNo();
                     Map<String, String> params = new HashMap<>();
                     params.put("taskType", Task.TYPE_OUTBOUND);
                     params.put("outID", outId);
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
-                    params.put("palletNo", palletNo);
+                    if (!isBlank(effectivePalletNo)) {
+                        params.put("palletNo", effectivePalletNo);
+                    }
                     params.put("fromBinCode", binCode);
                     params.put("toBinCode", binCode);
+                    if (selectedValve != null && selectedValve.getValveNo() != null) {
+                        params.put("valveNo", selectedValve.getValveNo());
+                    }
                     if (matCode != null) {
                         params.put("matCode", matCode);
                     }
@@ -240,7 +246,7 @@ public class OutboundActivity extends Activity {
      * 空托回库
      */
     private void callEmptyPalletReturn() {
-        if (binCode == null || binCode.isEmpty()) {
+        if (isBlank(binCode)) {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -288,12 +294,13 @@ public class OutboundActivity extends Activity {
                         }
                     });
                     String outId = DateUtil.generateTaskNo("H");
+                    String effectivePalletNo = getEffectivePalletNo();
                     Map<String, String> params = new HashMap<>();
                     params.put("taskType", Task.TYPE_RETURN);
                     params.put("outID", outId);
                     params.put("deviceCode", PreferenceUtil.getDeviceCode(OutboundActivity.this));
-                    if (palletNo != null) {
-                        params.put("palletNo", palletNo);
+                    if (!isBlank(effectivePalletNo)) {
+                        params.put("palletNo", effectivePalletNo);
                     }
                     params.put("fromBinCode", lastOutboundToBinCode);
                     params.put("toBinCode", binCode);
@@ -401,13 +408,10 @@ public class OutboundActivity extends Activity {
     }
 
     private String resolvePalletTypeCode(String palletNo) {
-        if (palletNo == null) {
+        if (isBlank(palletNo)) {
             return null;
         }
         String normalized = palletNo.trim();
-        if (normalized.isEmpty()) {
-            return null;
-        }
         String lower = normalized.toLowerCase();
         if (lower.contains("t1")) {
             return PALLET_TYPE_SMALL;
@@ -425,8 +429,34 @@ public class OutboundActivity extends Activity {
         return null;
     }
 
+    private String resolvePalletTypeCodeByBinCode(String binCode) {
+        Integer bay = extractBinBay(binCode);
+        if (bay == null) {
+            return null;
+        }
+        return bay >= 13 ? PALLET_TYPE_LARGE : PALLET_TYPE_SMALL;
+    }
+
+    private Integer extractBinBay(String binCode) {
+        if (isBlank(binCode)) {
+            return null;
+        }
+        String[] parts = binCode.trim().split("-");
+        if (parts.length < 2) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(parts[1]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private String resolveOutboundEmptyReturnStart() {
         String palletType = resolvePalletTypeCode(palletNo);
+        if (palletType == null) {
+            palletType = resolvePalletTypeCodeByBinCode(binCode);
+        }
         if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
             return LARGE_OUTBOUND_RETURN_START;
         }
@@ -443,16 +473,35 @@ public class OutboundActivity extends Activity {
             // 获取选中的阀门信息
             selectedValve = (Valve) data.getSerializableExtra("valve");
             if (selectedValve != null) {
-                palletNo = selectedValve.getPalletNo();
-                binCode = selectedValve.getBinCode();
-                matCode = selectedValve.getMatCode();
+                palletNo = trimToNull(selectedValve.getPalletNo());
+                binCode = trimToNull(selectedValve.getBinCode());
+                matCode = trimToNull(selectedValve.getMatCode());
                 lastOutboundToBinCode = null;
-                
-                tvPalletNo.setText(palletNo);
-                tvLocationCode.setText(binCode);
-                updateStatus(true);
+
+                tvPalletNo.setText(displayText(palletNo));
+                tvLocationCode.setText(displayText(binCode));
+                updateStatus(!isBlank(binCode));
             }
         }
+    }
+
+    private String getEffectivePalletNo() {
+        if (!isBlank(palletNo)) {
+            return palletNo;
+        }
+        return binCode;
+    }
+
+    private String displayText(String value) {
+        return isBlank(value) ? "--" : value;
+    }
+
+    private String trimToNull(String value) {
+        return isBlank(value) ? null : value.trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     @Override
