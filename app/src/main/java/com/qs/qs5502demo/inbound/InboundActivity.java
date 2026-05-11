@@ -303,7 +303,8 @@ public class InboundActivity extends Activity {
             public void run() {
                 try {
                     String selectedPalletType = resolvePalletTypeByOutsideSite(outsideSite);
-                    AvailableBin availableBin = wmsApiService.getAvailableBin(selectedPalletType, storageLevel, InboundActivity.this);
+                    AvailableBin availableBin = wmsApiService.getAvailableBin(selectedPalletType, storageLevel,
+                        outsideSite, InboundActivity.this);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -361,7 +362,8 @@ public class InboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    AvailableBin availableBin = wmsApiService.getAvailableBin(palletType, storageLevel, InboundActivity.this);
+                    AvailableBin availableBin = wmsApiService.getAvailableBin(palletType, storageLevel,
+                        swapStation, InboundActivity.this);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -487,8 +489,8 @@ public class InboundActivity extends Activity {
             palletType = null;
             updateInboundStationSelection(null);
             updateStorageFloorSelection(null);
-        } else if (swapStation != null && !swapStation.isEmpty()) {
-            fetchAvailableBinForStation(swapStation);
+        } else {
+            palletType = resolvePalletTypeByOutsideSite(swapStation);
         }
         updateStatus(false);
     }

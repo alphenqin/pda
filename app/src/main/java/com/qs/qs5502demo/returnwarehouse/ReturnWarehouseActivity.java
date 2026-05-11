@@ -59,8 +59,11 @@ public class ReturnWarehouseActivity extends Activity {
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
     private static final String LARGE_DOCK_BIN = "D2-大托盘接驳点";
-    private static final String SMALL_RETURN_OUTSIDE_SITE = "Z6-装卸点";
-    private static final String LARGE_RETURN_OUTSIDE_SITE = "Z7-装卸点";
+    private static final String SMALL_RETURN_OUTSIDE_SITE_1 = "Z1-装卸点";
+    private static final String SMALL_RETURN_OUTSIDE_SITE_2 = "Z2-装卸点";
+    private static final String SMALL_RETURN_OUTSIDE_SITE_3 = "Z3-装卸点";
+    private static final String SMALL_RETURN_OUTSIDE_SITE_4 = "Z4-装卸点";
+    private static final String LARGE_RETURN_OUTSIDE_SITE = "Z5-装卸点";
     private static final long LOCK_POLL_INTERVAL_MS = 5000L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -178,12 +181,12 @@ public class ReturnWarehouseActivity extends Activity {
             public void run() {
                 try {
                     String effectivePalletNo = getEffectivePalletNo();
-                    String palletType = resolvePalletTypeCode(effectivePalletNo);
+                    String palletType = resolvePalletTypeCodeByBinCode(binCode);
                     if (palletType == null) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "无法识别目标库位类型", Toast.LENGTH_SHORT).show();
                             }
                         });
                         return;
@@ -434,9 +437,9 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private void fetchAvailableBinForReturnSelection() {
-        String palletType = resolvePalletTypeCode(getEffectivePalletNo());
+        String palletType = resolvePalletTypeCodeByBinCode(oldBinCode);
         if (palletType == null) {
-            Toast.makeText(this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "无法识别原库位类型", Toast.LENGTH_SHORT).show();
             return;
         }
         if (!isReturnStationAllowed(returnOutsideSite, palletType)) {
@@ -456,7 +459,8 @@ public class ReturnWarehouseActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    AvailableBin availableBin = wmsApiService.getAvailableBin(palletType, storageLevel, ReturnWarehouseActivity.this);
+                    AvailableBin availableBin = wmsApiService.getAvailableBin(palletType, storageLevel,
+                        returnOutsideSite, ReturnWarehouseActivity.this);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -491,14 +495,25 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private String[] getReturnStationOptions() {
-        String palletType = resolvePalletTypeCode(getEffectivePalletNo());
+        String palletType = resolvePalletTypeCodeByBinCode(oldBinCode);
         if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
             return new String[]{LARGE_RETURN_OUTSIDE_SITE};
         }
         if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
-            return new String[]{SMALL_RETURN_OUTSIDE_SITE};
+            return new String[]{
+                SMALL_RETURN_OUTSIDE_SITE_1,
+                SMALL_RETURN_OUTSIDE_SITE_2,
+                SMALL_RETURN_OUTSIDE_SITE_3,
+                SMALL_RETURN_OUTSIDE_SITE_4
+            };
         }
-        return new String[]{SMALL_RETURN_OUTSIDE_SITE, LARGE_RETURN_OUTSIDE_SITE};
+        return new String[]{
+            SMALL_RETURN_OUTSIDE_SITE_1,
+            SMALL_RETURN_OUTSIDE_SITE_2,
+            SMALL_RETURN_OUTSIDE_SITE_3,
+            SMALL_RETURN_OUTSIDE_SITE_4,
+            LARGE_RETURN_OUTSIDE_SITE
+        };
     }
 
     private boolean isReturnStationAllowed(String station, String palletType) {
@@ -506,7 +521,10 @@ public class ReturnWarehouseActivity extends Activity {
             return LARGE_RETURN_OUTSIDE_SITE.equals(station);
         }
         if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
-            return SMALL_RETURN_OUTSIDE_SITE.equals(station);
+            return SMALL_RETURN_OUTSIDE_SITE_1.equals(station)
+                || SMALL_RETURN_OUTSIDE_SITE_2.equals(station)
+                || SMALL_RETURN_OUTSIDE_SITE_3.equals(station)
+                || SMALL_RETURN_OUTSIDE_SITE_4.equals(station);
         }
         return false;
     }
@@ -596,32 +614,6 @@ public class ReturnWarehouseActivity extends Activity {
         }).start();
     }
 
-    private String resolvePalletTypeCode(String palletNo) {
-        if (isBlank(palletNo)) {
-            return null;
-        }
-        String normalized = palletNo.trim();
-        String lower = normalized.toLowerCase();
-        if (lower.contains("t1")) {
-            return PALLET_TYPE_SMALL;
-        }
-        if (lower.contains("t2")) {
-            return PALLET_TYPE_LARGE;
-        }
-        char first = lower.charAt(0);
-        if (first == 'x') {
-            return PALLET_TYPE_SMALL;
-        }
-        if (first == 'd') {
-            return PALLET_TYPE_LARGE;
-        }
-        String typeByBin = resolvePalletTypeCodeByBinCode(palletNo);
-        if (typeByBin != null) {
-            return typeByBin;
-        }
-        return null;
-    }
-
     private String resolvePalletTypeCodeByBinCode(String binCode) {
         Integer bay = extractBinBay(binCode);
         if (bay == null) {
@@ -645,17 +637,6 @@ public class ReturnWarehouseActivity extends Activity {
         }
     }
 
-    private String resolveReturnOutsideSite(String palletNo) {
-        String palletType = resolvePalletTypeCode(palletNo);
-        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
-            return SMALL_RETURN_OUTSIDE_SITE;
-        }
-        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
-            return LARGE_RETURN_OUTSIDE_SITE;
-        }
-        return null;
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -669,8 +650,7 @@ public class ReturnWarehouseActivity extends Activity {
                 returnOutsideSite = null;
                 storageLevel = null;
                 matCode = trimToNull(selectedValve.getMatCode());
-                String returnOutsideSite = resolveReturnOutsideSite(getEffectivePalletNo());
-                inspectionTargetBin = returnOutsideSite != null ? returnOutsideSite : selectedValve.getInspectionTargetBin();
+                inspectionTargetBin = selectedValve.getInspectionTargetBin();
 
                 tvPalletNo.setText(displayText(selectedValve.getValveNo()));
                 tvLocationCode.setText("--");

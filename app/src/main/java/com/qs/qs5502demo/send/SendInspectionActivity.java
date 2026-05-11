@@ -83,7 +83,8 @@ public class SendInspectionActivity extends Activity {
         emptyReturnLabel = btnEmptyPalletReturn.getText();
         
         updateStatus(false);
-        restoreSelectedValve();
+        PreferenceUtil.clearLastSendInspectionValve(this);
+        applySelectedValve(null);
         refreshInspectionLockStatus();
     }
     
@@ -139,30 +140,12 @@ public class SendInspectionActivity extends Activity {
     }
 
     private String resolveInspectionTargetBin() {
-        String targetByPallet = resolveInspectionTargetBinByPalletNo(palletNo);
-        if (targetByPallet != null) {
-            return targetByPallet;
-        }
         String palletType = resolvePalletTypeByBinCode(binCode);
         if ("large".equals(palletType)) {
             return LARGE_PALLET_INSPECTION_BIN;
         }
         if ("small".equals(palletType)) {
             return SMALL_PALLET_INSPECTION_BIN;
-        }
-        return null;
-    }
-
-    private String resolveInspectionTargetBinByPalletNo(String palletNo) {
-        if (isBlank(palletNo)) {
-            return null;
-        }
-        String normalized = palletNo.trim().toLowerCase(Locale.getDefault());
-        if (normalized.startsWith("x")) {
-            return SMALL_PALLET_INSPECTION_BIN;
-        }
-        if (normalized.startsWith("d")) {
-            return LARGE_PALLET_INSPECTION_BIN;
         }
         return null;
     }
@@ -253,7 +236,6 @@ public class SendInspectionActivity extends Activity {
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 updateStatus(true);
-                                persistSelectedValve();
                                 Toast.makeText(SendInspectionActivity.this, 
                                     "呼叫送检成功，任务号：" + taskNo, 
                                     Toast.LENGTH_LONG).show();
@@ -618,7 +600,6 @@ public class SendInspectionActivity extends Activity {
             // 获取选中的阀门信息
             Valve valve = (Valve) data.getSerializableExtra("valve");
             applySelectedValve(valve);
-            persistSelectedValve();
         }
     }
 }

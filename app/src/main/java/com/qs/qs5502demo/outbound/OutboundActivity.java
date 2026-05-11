@@ -139,11 +139,16 @@ public class OutboundActivity extends Activity {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (isBlank(resolveOutboundTarget())) {
+            Toast.makeText(this, "托盘类型无法识别，无法确定出库站点", Toast.LENGTH_SHORT).show();
+            return;
+        }
         
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫出库")
             .setMessage("出厂编号：" + selectedValve.getValveNo() +
-                       "\n库位号：" + binCode)
+                       "\n库位号：" + binCode +
+                       "\n目标站点：" + resolveOutboundTarget())
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -181,7 +186,7 @@ public class OutboundActivity extends Activity {
                         params.put("palletNo", effectivePalletNo);
                     }
                     params.put("fromBinCode", binCode);
-                    params.put("toBinCode", binCode);
+                    params.put("toBinCode", resolveOutboundTarget());
                     if (selectedValve != null && selectedValve.getValveNo() != null) {
                         params.put("valveNo", selectedValve.getValveNo());
                     }
@@ -406,28 +411,6 @@ public class OutboundActivity extends Activity {
         }
     }
 
-    private String resolvePalletTypeCode(String palletNo) {
-        if (isBlank(palletNo)) {
-            return null;
-        }
-        String normalized = palletNo.trim();
-        String lower = normalized.toLowerCase();
-        if (lower.contains("t1")) {
-            return PALLET_TYPE_SMALL;
-        }
-        if (lower.contains("t2")) {
-            return PALLET_TYPE_LARGE;
-        }
-        char first = lower.charAt(0);
-        if (first == 'x') {
-            return PALLET_TYPE_SMALL;
-        }
-        if (first == 'd') {
-            return PALLET_TYPE_LARGE;
-        }
-        return null;
-    }
-
     private String resolvePalletTypeCodeByBinCode(String binCode) {
         Integer bay = extractBinBay(binCode);
         if (bay == null) {
@@ -452,10 +435,7 @@ public class OutboundActivity extends Activity {
     }
 
     private String resolveOutboundEmptyReturnStart() {
-        String palletType = resolvePalletTypeCode(palletNo);
-        if (palletType == null) {
-            palletType = resolvePalletTypeCodeByBinCode(binCode);
-        }
+        String palletType = resolvePalletTypeCodeByBinCode(binCode);
         if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
             return LARGE_OUTBOUND_RETURN_START;
         }
@@ -463,6 +443,17 @@ public class OutboundActivity extends Activity {
             return SMALL_OUTBOUND_RETURN_START;
         }
         return "装卸点";
+    }
+
+    private String resolveOutboundTarget() {
+        String palletType = resolvePalletTypeCodeByBinCode(binCode);
+        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
+            return LARGE_OUTBOUND_RETURN_START;
+        }
+        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
+            return SMALL_OUTBOUND_RETURN_START;
+        }
+        return "";
     }
 
     @Override

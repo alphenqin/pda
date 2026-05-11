@@ -96,10 +96,17 @@ public class WmsApiService {
     }
 
     public AvailableBin getAvailableBin(String palletType, Integer storageLevel, Context context) throws IOException {
+        return getAvailableBin(palletType, storageLevel, null, context);
+    }
+
+    public AvailableBin getAvailableBin(String palletType, Integer storageLevel, String outsideSite, Context context) throws IOException {
         String url = getBaseUrl() + "/bin/available";
         Map<String, Object> request = new HashMap<>();
         if (palletType != null && !palletType.isEmpty()) {
             request.put("palletType", palletType);
+        }
+        if (outsideSite != null && !outsideSite.isEmpty()) {
+            request.put("outsideSite", outsideSite);
         }
         if (storageLevel != null) {
             request.put("storageLevel", storageLevel);
