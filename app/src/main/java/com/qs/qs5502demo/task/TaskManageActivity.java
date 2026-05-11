@@ -350,11 +350,7 @@ public class TaskManageActivity extends Activity {
                 tvTaskTime.setText("创建时间：" + task.getCreateTime());
                 
                 String info = "";
-                if (task.getPalletNo() != null && !task.getPalletNo().isEmpty()) {
-                    info += "托盘：" + task.getPalletNo();
-                }
                 if (task.getBinCode() != null && !task.getBinCode().isEmpty()) {
-                    if (!info.isEmpty()) info += "  ";
                     info += "库位：" + task.getBinCode();
                 }
                 tvTaskInfo.setText(info);

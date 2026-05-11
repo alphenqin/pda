@@ -143,7 +143,6 @@ public class OutboundActivity extends Activity {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫出库")
             .setMessage("出厂编号：" + selectedValve.getValveNo() +
-                       "\n托盘号：" + displayText(palletNo) +
                        "\n库位号：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
@@ -313,7 +312,7 @@ public class OutboundActivity extends Activity {
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outId;
                                 Toast.makeText(OutboundActivity.this, 
-                                    "空托回库成功，任务号：" + taskNo, 
+                                    "空托回库成功，任务号：" + taskNo,
                                     Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(OutboundActivity.this, "空托回库失败", Toast.LENGTH_SHORT).show();

@@ -194,7 +194,6 @@ public class SendInspectionActivity extends Activity {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫送检")
             .setMessage("出厂编号：" + selectedValve.getValveNo() +
-                       "\n托盘号：" + displayText(palletNo) +
                        "\n库位号：" + binCode +
                        "\n目标站点：" + targetBinCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
@@ -347,7 +346,7 @@ public class SendInspectionActivity extends Activity {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 PreferenceUtil.clearLastSendInspectionValve(SendInspectionActivity.this);
                                 Toast.makeText(SendInspectionActivity.this, 
-                                    "空托回库成功，任务号：" + taskNo, 
+                                    "空托回库成功，任务号：" + taskNo,
                                     Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(SendInspectionActivity.this, "空托回库失败", Toast.LENGTH_SHORT).show();
