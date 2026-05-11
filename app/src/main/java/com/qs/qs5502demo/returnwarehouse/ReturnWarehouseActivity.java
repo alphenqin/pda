@@ -9,11 +9,15 @@ import android.os.Looper;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
+import com.qs.qs5502demo.model.AvailableBin;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.TaskLockStatus;
@@ -29,6 +33,8 @@ public class ReturnWarehouseActivity extends Activity {
     
     private TextView tvPalletNo;
     private TextView tvLocationCode;
+    private TextView tvReturnStation;
+    private TextView tvStorageFloor;
     private View viewStatus;
     private Button btnSelectValve;
     private Button btnCallPallet;
@@ -41,8 +47,11 @@ public class ReturnWarehouseActivity extends Activity {
     
     private String palletNo;
     private String binCode;
+    private String oldBinCode;
+    private String returnOutsideSite;
     private String matCode;
     private String inspectionTargetBin;
+    private Integer storageLevel;
     private Valve selectedValve;
     private static final String PALLET_TYPE_SMALL = "t1";
     private static final String PALLET_TYPE_LARGE = "t2";
@@ -77,6 +86,8 @@ public class ReturnWarehouseActivity extends Activity {
     private void initViews() {
         tvPalletNo = (TextView) findViewById(R.id.tvPalletNo);
         tvLocationCode = (TextView) findViewById(R.id.tvLocationCode);
+        tvReturnStation = (TextView) findViewById(R.id.tvReturnStation);
+        tvStorageFloor = (TextView) findViewById(R.id.tvStorageFloor);
         viewStatus = findViewById(R.id.viewStatus);
         btnSelectValve = (Button) findViewById(R.id.btnSelectValve);
         btnCallPallet = (Button) findViewById(R.id.btnCallPallet);
@@ -110,7 +121,7 @@ public class ReturnWarehouseActivity extends Activity {
         btnCallPallet.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                callPallet();
+                showReturnStationDialog();
             }
         });
         
@@ -123,169 +134,17 @@ public class ReturnWarehouseActivity extends Activity {
     }
     
     /**
-     * 呼叫托盘
-     */
-    private void callPallet() {
-        if (returnCallLocked || callPalletInProgress) {
-            Toast.makeText(this, "呼叫托盘进行中，请稍后再试", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (returnValveLocked || valveReturnInProgress) {
-            Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (selectedValve == null || isBlank(binCode)) {
-            Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String effectivePalletNo = getEffectivePalletNo();
-        String palletType = resolvePalletTypeCode(effectivePalletNo);
-        if (palletType == null) {
-            Toast.makeText(this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String returnOutsideSite = resolveReturnOutsideSite(effectivePalletNo);
-        if (returnOutsideSite == null) {
-            Toast.makeText(this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        inspectionTargetBin = returnOutsideSite;
-        String bufferBin = PALLET_TYPE_LARGE.equalsIgnoreCase(palletType) ? LARGE_BUFFER_BIN : SMALL_BUFFER_BIN;
-        
-        new AlertDialog.Builder(this)
-            .setTitle("确认呼叫托盘")
-            .setMessage("将空托盘从库位 " + binCode + " 运送到中转位 " + bufferBin +
-                "\n完成后送往库外站点：" + returnOutsideSite)
-            .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(android.content.DialogInterface dialog, int which) {
-                    performCallPallet();
-                }
-            })
-            .setNegativeButton("取消", null)
-            .show();
-    }
-    
-    /**
-     * 执行呼叫托盘
-     */
-    private void performCallPallet() {
-        Toast.makeText(this, "正在创建呼叫托盘任务...", Toast.LENGTH_SHORT).show();
-        
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    String effectivePalletNo = getEffectivePalletNo();
-                    String palletType = resolvePalletTypeCode(effectivePalletNo);
-                    if (palletType == null) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        return;
-                    }
-                    String returnOutsideSite = resolveReturnOutsideSite(effectivePalletNo);
-                    if (returnOutsideSite == null) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        return;
-                    }
-                    inspectionTargetBin = returnOutsideSite;
-                    callPalletInProgress = true;
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            updateButtonLocks();
-                        }
-                    });
-
-                    String outId = DateUtil.generateTaskNo("H");
-                    Map<String, String> params = new HashMap<>();
-                    params.put("taskType", Task.TYPE_RETURN);
-                    params.put("outID", outId);
-                    params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    params.put("palletNo", effectivePalletNo);
-                    params.put("fromBinCode", binCode);
-                    params.put("toBinCode", returnOutsideSite);
-                    params.put("remark", "RETURN_CALL_PALLET");
-                    if (selectedValve != null && selectedValve.getValveNo() != null) {
-                        params.put("valveNo", selectedValve.getValveNo());
-                    }
-                    TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
-                    
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (result != null) {
-                                String taskNo = result.getOutID() != null ? result.getOutID() : outId;
-                                Toast.makeText(ReturnWarehouseActivity.this,
-                                    "呼叫托盘已下发，任务号：" + taskNo,
-                                    Toast.LENGTH_LONG).show();
-                            } else {
-                                Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘下发失败", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
-
-                    if (result == null) {
-                        callPalletInProgress = false;
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                updateButtonLocks();
-                            }
-                        });
-                        return;
-                    }
-
-                    callPalletInProgress = false;
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            updateButtonLocks();
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(ReturnWarehouseActivity.this, "呼叫托盘失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                    callPalletInProgress = false;
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            updateButtonLocks();
-                        }
-                    });
-                }
-            }
-        }).start();
-    }
-    
-    /**
      * 阀门回库
      */
     private void callValveReturn() {
-        if (isBlank(binCode)) {
-            Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
+        if (selectedValve == null) {
+            Toast.makeText(this, "请先选择出厂编号", Toast.LENGTH_SHORT).show();
             return;
         }
-        String returnOutsideSite = resolveReturnOutsideSite(getEffectivePalletNo());
-        if (returnOutsideSite == null) {
-            Toast.makeText(this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
+        if (isBlank(returnOutsideSite) || storageLevel == null || isBlank(binCode)) {
+            Toast.makeText(this, "请先选择库外站点/存放库位", Toast.LENGTH_SHORT).show();
             return;
         }
-        inspectionTargetBin = returnOutsideSite;
         if (returnValveLocked || valveReturnInProgress) {
             Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
@@ -293,7 +152,11 @@ public class ReturnWarehouseActivity extends Activity {
         
         new AlertDialog.Builder(this)
             .setTitle("确认样品回库")
-            .setMessage("将样品送回库位：" + binCode)
+            .setMessage("出厂编号：" + selectedValve.getValveNo()
+                + "\n库外站点：" + returnOutsideSite
+                + "\n原库位：" + displayText(oldBinCode)
+                + "\n新库位：" + binCode
+                + "\n存放库位：" + getStorageFloorText())
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -325,12 +188,11 @@ public class ReturnWarehouseActivity extends Activity {
                         });
                         return;
                     }
-                    String returnOutsideSite = resolveReturnOutsideSite(effectivePalletNo);
-                    if (returnOutsideSite == null) {
+                    if (isBlank(returnOutsideSite)) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "无法确定库外站点", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "请先选择库外站点", Toast.LENGTH_SHORT).show();
                             }
                         });
                         return;
@@ -352,6 +214,7 @@ public class ReturnWarehouseActivity extends Activity {
                     params.put("palletNo", effectivePalletNo);
                     params.put("fromBinCode", returnOutsideSite);
                     params.put("toBinCode", binCode);
+                    params.put("storageLevel", String.valueOf(storageLevel));
                     if (matCode != null) {
                         params.put("matCode", matCode);
                     }
@@ -366,8 +229,9 @@ public class ReturnWarehouseActivity extends Activity {
                         public void run() {
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outId;
+                                resetReturnFormAfterQueue();
                                 Toast.makeText(ReturnWarehouseActivity.this, 
-                                    "样品回库成功，任务号：" + taskNo, 
+                                    "样品回库任务已下发，任务号：" + taskNo,
                                     Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(ReturnWarehouseActivity.this, "样品回库下发失败", Toast.LENGTH_SHORT).show();
@@ -445,7 +309,7 @@ public class ReturnWarehouseActivity extends Activity {
             } else if (callPalletInProgress) {
                 btnCallPallet.setText(callPalletLabel + "（处理中）");
             } else {
-                btnCallPallet.setText(callPalletLabel + "（呼叫托盘中）");
+                btnCallPallet.setText(callPalletLabel + "（锁定中）");
             }
         }
 
@@ -461,9 +325,222 @@ public class ReturnWarehouseActivity extends Activity {
             } else if (valveReturnInProgress) {
                 btnValveReturn.setText(valveReturnLabel + "（处理中）");
             } else {
-                btnValveReturn.setText(valveReturnLabel + "（呼叫托盘中）");
+                btnValveReturn.setText(valveReturnLabel + "（锁定中）");
             }
         }
+    }
+
+    private void showReturnStationDialog() {
+        if (selectedValve == null) {
+            Toast.makeText(this, "请先选择出厂编号", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] stations = getReturnStationOptions();
+        int selectedIndex = -1;
+        for (int i = 0; i < stations.length; i++) {
+            if (stations[i].equals(returnOutsideSite)) {
+                selectedIndex = i;
+                break;
+            }
+        }
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(24, 8, 24, 0);
+
+        TextView stationTitle = new TextView(this);
+        stationTitle.setText("库外站点");
+        stationTitle.setTextSize(16);
+        content.addView(stationTitle);
+
+        RadioGroup stationGroup = new RadioGroup(this);
+        stationGroup.setOrientation(RadioGroup.VERTICAL);
+        final int stationIdBase = 1000;
+        for (int i = 0; i < stations.length; i++) {
+            RadioButton item = new RadioButton(this);
+            item.setId(stationIdBase + i);
+            item.setText(stations[i]);
+            item.setTextSize(16);
+            stationGroup.addView(item);
+            if (i == selectedIndex) {
+                stationGroup.check(item.getId());
+            }
+        }
+        content.addView(stationGroup);
+
+        TextView floorTitle = new TextView(this);
+        floorTitle.setText("存放库位");
+        floorTitle.setTextSize(16);
+        floorTitle.setPadding(0, 16, 0, 0);
+        content.addView(floorTitle);
+
+        RadioGroup floorGroup = new RadioGroup(this);
+        floorGroup.setOrientation(RadioGroup.VERTICAL);
+        final int firstFloorId = 2001;
+        final int secondFloorId = 2002;
+        final int thirdFloorId = 2003;
+        RadioButton firstFloor = new RadioButton(this);
+        firstFloor.setId(firstFloorId);
+        firstFloor.setText("存放在一层");
+        firstFloor.setTextSize(16);
+        floorGroup.addView(firstFloor);
+        RadioButton secondFloor = new RadioButton(this);
+        secondFloor.setId(secondFloorId);
+        secondFloor.setText("存放在二层");
+        secondFloor.setTextSize(16);
+        floorGroup.addView(secondFloor);
+        RadioButton thirdFloor = new RadioButton(this);
+        thirdFloor.setId(thirdFloorId);
+        thirdFloor.setText("存放在三层");
+        thirdFloor.setTextSize(16);
+        floorGroup.addView(thirdFloor);
+        if (storageLevel != null) {
+            if (storageLevel == 1) {
+                floorGroup.check(firstFloorId);
+            } else if (storageLevel == 2) {
+                floorGroup.check(secondFloorId);
+            } else if (storageLevel == 3) {
+                floorGroup.check(thirdFloorId);
+            }
+        }
+        content.addView(floorGroup);
+
+        new AlertDialog.Builder(this)
+            .setTitle("选择库外站点")
+            .setView(content)
+            .setPositiveButton("确定", new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface dialog, int which) {
+                    int stationCheckedId = stationGroup.getCheckedRadioButtonId();
+                    int stationIndex = stationCheckedId - stationIdBase;
+                    int floorCheckedId = floorGroup.getCheckedRadioButtonId();
+                    if (stationIndex < 0 || stationIndex >= stations.length) {
+                        Toast.makeText(ReturnWarehouseActivity.this, "请选择库外站点", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (floorCheckedId != firstFloorId && floorCheckedId != secondFloorId && floorCheckedId != thirdFloorId) {
+                        Toast.makeText(ReturnWarehouseActivity.this, "请选择存放库位", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    returnOutsideSite = stations[stationIndex];
+                    storageLevel = floorCheckedId == firstFloorId ? 1 : (floorCheckedId == secondFloorId ? 2 : 3);
+                    tvReturnStation.setText(returnOutsideSite);
+                    tvStorageFloor.setText(getStorageFloorText());
+                    fetchAvailableBinForReturnSelection();
+                }
+            })
+            .setNegativeButton("取消", null)
+            .show();
+    }
+
+    private void fetchAvailableBinForReturnSelection() {
+        String palletType = resolvePalletTypeCode(getEffectivePalletNo());
+        if (palletType == null) {
+            Toast.makeText(this, "无法识别托盘类型", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!isReturnStationAllowed(returnOutsideSite, palletType)) {
+            Toast.makeText(this, "当前样品托盘类型不支持该库外站点", Toast.LENGTH_SHORT).show();
+            returnOutsideSite = null;
+            storageLevel = null;
+            binCode = null;
+            tvReturnStation.setText("未选择");
+            tvStorageFloor.setText("未选择");
+            tvLocationCode.setText("--");
+            updateStatus(false);
+            return;
+        }
+
+        Toast.makeText(this, "正在获取可用库位...", Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    AvailableBin availableBin = wmsApiService.getAvailableBin(palletType, storageLevel, ReturnWarehouseActivity.this);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (availableBin == null || isBlank(availableBin.getBinCode())) {
+                                binCode = null;
+                                tvLocationCode.setText("--");
+                                updateStatus(false);
+                                Toast.makeText(ReturnWarehouseActivity.this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            binCode = availableBin.getBinCode();
+                            palletNo = binCode;
+                            tvPalletNo.setText(displayText(selectedValve != null ? selectedValve.getValveNo() : null));
+                            tvLocationCode.setText(binCode);
+                            updateStatus(true);
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            binCode = null;
+                            tvLocationCode.setText("--");
+                            updateStatus(false);
+                            Toast.makeText(ReturnWarehouseActivity.this, "查询库位失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
+
+    private String[] getReturnStationOptions() {
+        String palletType = resolvePalletTypeCode(getEffectivePalletNo());
+        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
+            return new String[]{LARGE_RETURN_OUTSIDE_SITE};
+        }
+        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
+            return new String[]{SMALL_RETURN_OUTSIDE_SITE};
+        }
+        return new String[]{SMALL_RETURN_OUTSIDE_SITE, LARGE_RETURN_OUTSIDE_SITE};
+    }
+
+    private boolean isReturnStationAllowed(String station, String palletType) {
+        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
+            return LARGE_RETURN_OUTSIDE_SITE.equals(station);
+        }
+        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
+            return SMALL_RETURN_OUTSIDE_SITE.equals(station);
+        }
+        return false;
+    }
+
+    private String getStorageFloorText() {
+        if (storageLevel == null) {
+            return "未选择";
+        }
+        if (storageLevel == 1) {
+            return "存放在一层";
+        }
+        if (storageLevel == 2) {
+            return "存放在二层";
+        }
+        if (storageLevel == 3) {
+            return "存放在三层";
+        }
+        return "未选择";
+    }
+
+    private void resetReturnFormAfterQueue() {
+        selectedValve = null;
+        palletNo = null;
+        binCode = null;
+        oldBinCode = null;
+        returnOutsideSite = null;
+        storageLevel = null;
+        matCode = null;
+        inspectionTargetBin = null;
+        tvPalletNo.setText("--");
+        tvLocationCode.setText("--");
+        tvReturnStation.setText("未选择");
+        tvStorageFloor.setText("未选择");
+        updateStatus(false);
     }
 
     private void startLockStatusPolling() {
@@ -587,14 +664,19 @@ public class ReturnWarehouseActivity extends Activity {
             selectedValve = (Valve) data.getSerializableExtra("valve");
             if (selectedValve != null) {
                 palletNo = trimToNull(selectedValve.getPalletNo());
-                binCode = trimToNull(selectedValve.getBinCode());
+                oldBinCode = trimToNull(selectedValve.getBinCode());
+                binCode = null;
+                returnOutsideSite = null;
+                storageLevel = null;
                 matCode = trimToNull(selectedValve.getMatCode());
                 String returnOutsideSite = resolveReturnOutsideSite(getEffectivePalletNo());
                 inspectionTargetBin = returnOutsideSite != null ? returnOutsideSite : selectedValve.getInspectionTargetBin();
 
-                tvPalletNo.setText(displayText(palletNo));
-                tvLocationCode.setText(displayText(binCode));
-                updateStatus(!isBlank(binCode));
+                tvPalletNo.setText(displayText(selectedValve.getValveNo()));
+                tvLocationCode.setText("--");
+                tvReturnStation.setText("未选择");
+                tvStorageFloor.setText("未选择");
+                updateStatus(false);
             }
         }
     }
@@ -602,6 +684,9 @@ public class ReturnWarehouseActivity extends Activity {
     private String getEffectivePalletNo() {
         if (!isBlank(palletNo)) {
             return palletNo;
+        }
+        if (!isBlank(oldBinCode)) {
+            return oldBinCode;
         }
         return binCode;
     }
