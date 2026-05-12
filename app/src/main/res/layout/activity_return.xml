@@ -196,7 +196,7 @@
             android:layout_width="match_parent"
             android:layout_height="100dp"
             android:layout_marginBottom="16dp"
-            android:text="2. 选择库外站点/存放库位"
+            android:text="2. 呼叫空托"
             android:textSize="24sp"
             android:textStyle="bold"
             android:background="#FF9800"

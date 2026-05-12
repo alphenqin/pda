@@ -66,9 +66,10 @@ public class SendInspectionActivity extends Activity {
         setContentView(R.layout.activity_send_inspection);
         
         wmsApiService = new WmsApiService(this);
-        
+	        
         initViews();
         setupListeners();
+        restoreSelectedValve();
     }
     
     private void initViews() {
@@ -83,7 +84,6 @@ public class SendInspectionActivity extends Activity {
         emptyReturnLabel = btnEmptyPalletReturn.getText();
         
         updateStatus(false);
-        PreferenceUtil.clearLastSendInspectionValve(this);
         applySelectedValve(null);
         refreshInspectionLockStatus();
     }
@@ -265,7 +265,7 @@ public class SendInspectionActivity extends Activity {
      */
     private void callEmptyPalletReturn() {
         if (binCode == null || binCode.isEmpty()) {
-            Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "未找到原库位，请重新选择样品或等待送检任务恢复", Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -600,6 +600,7 @@ public class SendInspectionActivity extends Activity {
             // 获取选中的阀门信息
             Valve valve = (Valve) data.getSerializableExtra("valve");
             applySelectedValve(valve);
+            persistSelectedValve();
         }
     }
 }

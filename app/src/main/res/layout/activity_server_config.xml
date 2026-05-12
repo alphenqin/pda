@@ -46,26 +46,6 @@
             android:inputType="textUri"
             android:layout_marginBottom="24dp" />
 
-        <!-- AGV服务器地址 -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="AGV服务器地址"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
-
-        <EditText
-            android:id="@+id/etAgvUrl"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:hint="请输入AGV服务器地址"
-            android:padding="12dp"
-            android:background="#F5F5F5"
-            android:textSize="14sp"
-            android:inputType="textUri"
-            android:layout_marginBottom="24dp" />
-
         <!-- AGV范围 -->
         <TextView
             android:layout_width="wrap_content"

@@ -15,7 +15,6 @@ public class PreferenceUtil {
     private static final String KEY_USER_NAME = "user_name";
     private static final String KEY_EXPIRE_AT = "expire_at";
     private static final String KEY_WMS_BASE_URL = "wms_base_url";
-    private static final String KEY_AGV_BASE_URL = "agv_base_url";
     private static final String KEY_WMS_PALLET_SCAN_ENABLED = "wms_pallet_scan_enabled";
     private static final String KEY_DEVICE_CODE = "device_code";
     private static final String KEY_AGV_RANGE = "agv_range";
@@ -102,22 +101,6 @@ public class PreferenceUtil {
         return prefs.getString(KEY_WMS_BASE_URL, null);
     }
     
-    /**
-     * 保存AGV服务器地址
-     */
-    public static void saveAgvBaseUrl(Context context, String url) {
-        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        prefs.edit().putString(KEY_AGV_BASE_URL, url).apply();
-    }
-    
-    /**
-     * 获取AGV服务器地址
-     */
-    public static String getAgvBaseUrl(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        return prefs.getString(KEY_AGV_BASE_URL, null);
-    }
-
     /**
      * 保存AGV范围
      */

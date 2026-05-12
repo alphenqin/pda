@@ -12,10 +12,13 @@ public class Valve implements Serializable {
     private String vendorName;      // 厂家名称
     private String inboundDate;     // 入库日期 yyyy-MM-dd
     private String palletNo;        // 托盘号
+    private String inspectionDate;  // 送检日期
+    private String returnDate;      // 回库日期
     private String binCode;         // 库位号，与调度系统 binCode 一致
     private String locationCode;    // 库位号（兼容旧字段）
     private String valveStatus;     // 阀门状态：IN_STOCK/IN_INSPECTION/INSPECTED/OUTBOUND
     private String inspectionTargetBin; // 送检目标站点（如 Z6-装卸点/Z7-装卸点）
+    private String remark;          // 备注
     private String deviceCode;      // PDA设备编号
 
     public Valve() {
@@ -51,6 +54,22 @@ public class Valve implements Serializable {
 
     public void setPalletNo(String palletNo) {
         this.palletNo = palletNo;
+    }
+
+    public String getInspectionDate() {
+        return inspectionDate;
+    }
+
+    public void setInspectionDate(String inspectionDate) {
+        this.inspectionDate = inspectionDate;
+    }
+
+    public String getReturnDate() {
+        return returnDate;
+    }
+
+    public void setReturnDate(String returnDate) {
+        this.returnDate = returnDate;
     }
 
     public String getMatCode() {
@@ -93,6 +112,14 @@ public class Valve implements Serializable {
 
     public void setInspectionTargetBin(String inspectionTargetBin) {
         this.inspectionTargetBin = inspectionTargetBin;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
     }
 
     public String getDeviceCode() {
