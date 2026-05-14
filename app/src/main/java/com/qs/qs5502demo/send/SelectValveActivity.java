@@ -232,14 +232,12 @@ public class SelectValveActivity extends Activity {
             RadioButton rbSelected;
             TextView tvValveNo;
             TextView tvPalletInfo;
-            TextView tvInboundDate;
             
             ViewHolder(View itemView) {
                 super(itemView);
                 rbSelected = (RadioButton) itemView.findViewById(R.id.rbSelected);
                 tvValveNo = (TextView) itemView.findViewById(R.id.tvValveNo);
                 tvPalletInfo = (TextView) itemView.findViewById(R.id.tvPalletInfo);
-                tvInboundDate = (TextView) itemView.findViewById(R.id.tvInboundDate);
                 
                 itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -257,7 +255,6 @@ public class SelectValveActivity extends Activity {
                 rbSelected.setChecked(selectedValve == valve);
                 tvValveNo.setText("出厂编号：" + valve.getValveNo());
                 tvPalletInfo.setText("库位：" + displayText(valve.getBinCode()));
-                tvInboundDate.setText("入库日期：" + valve.getInboundDate());
             }
         }
     }

@@ -58,6 +58,7 @@ public class InboundActivity extends Activity {
     private String palletType;
     private Integer storageLevel;
     private String matCode;  // 阀门物料编码
+    private String valveNo;  // 出厂编号
     private boolean isValveBound = false;  // 阀门是否已绑定
     private boolean isPalletScanEnabled = true;
     private Handler handler = new Handler();
@@ -430,6 +431,9 @@ public class InboundActivity extends Activity {
                     if (matCode != null) {
                         params.put("matCode", matCode);
                     }
+                    if (valveNo != null) {
+                        params.put("valveNo", valveNo);
+                    }
                     applyAgvRange(params);
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, InboundActivity.this);
                     
@@ -480,6 +484,7 @@ public class InboundActivity extends Activity {
     private void resetInboundFormAfterQueue() {
         isValveBound = false;
         matCode = null;
+        valveNo = null;
         palletNo = null;
         binCode = null;
         inboundSubmitted = false;
@@ -786,6 +791,7 @@ public class InboundActivity extends Activity {
                             if (success) {
                                 isValveBound = false;
                                 matCode = null;
+                                valveNo = null;
                                 inboundSubmitted = false;
                                 palletNo = null;
                                 binCode = null;
@@ -831,6 +837,7 @@ public class InboundActivity extends Activity {
             // 阀门绑定成功，获取物料编码
             if (data != null) {
                 matCode = data.getStringExtra("matCode");
+                valveNo = data.getStringExtra("valveNo");
             }
             isValveBound = true;
             updateStatus(true);

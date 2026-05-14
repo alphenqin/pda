@@ -562,7 +562,7 @@ public class SendInspectionActivity extends Activity {
         palletNo = trimToNull(selectedValve.getPalletNo());
         binCode = trimToNull(selectedValve.getBinCode());
         matCode = trimToNull(selectedValve.getMatCode());
-        tvPalletNo.setText(displayText(palletNo));
+        tvPalletNo.setText(displayText(selectedValve.getValveNo()));
         tvLocationCode.setText(displayText(binCode));
         updateStatus(!isBlank(binCode));
     }

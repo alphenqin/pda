@@ -46,14 +46,6 @@
                 android:textColor="#666666"
                 android:layout_marginTop="4dp" />
 
-            <TextView
-                android:id="@+id/tvInboundDate"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="入库日期：2025-01-15"
-                android:textSize="14sp"
-                android:textColor="#999999"
-                android:layout_marginTop="4dp" />
         </LinearLayout>
     </LinearLayout>
 

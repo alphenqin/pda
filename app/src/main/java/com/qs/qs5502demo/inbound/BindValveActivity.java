@@ -141,6 +141,7 @@ public class BindValveActivity extends Activity {
                                 // 返回物料编码
                                 android.content.Intent resultIntent = new android.content.Intent();
                                 resultIntent.putExtra("matCode", valve.getMatCode());
+                                resultIntent.putExtra("valveNo", valve.getValveNo());
                                 setResult(RESULT_OK, resultIntent);
                                 finish();
                             } else {

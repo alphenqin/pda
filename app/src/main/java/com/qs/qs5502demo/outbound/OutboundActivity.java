@@ -468,7 +468,7 @@ public class OutboundActivity extends Activity {
                 matCode = trimToNull(selectedValve.getMatCode());
                 lastOutboundToBinCode = null;
 
-                tvPalletNo.setText(displayText(palletNo));
+                tvPalletNo.setText(displayText(selectedValve.getValveNo()));
                 tvLocationCode.setText(displayText(binCode));
                 updateStatus(!isBlank(binCode));
             }
