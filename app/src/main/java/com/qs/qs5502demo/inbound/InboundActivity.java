@@ -116,6 +116,10 @@ public class InboundActivity extends Activity {
         btnScanPallet.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (isInboundActionLocked()) {
+                    Toast.makeText(InboundActivity.this, "入库任务执行中，请稍后再操作", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 if (hasPendingBinding()) {
                     confirmCancelBindingBeforeAction(new Runnable() {
                         @Override
@@ -132,6 +136,10 @@ public class InboundActivity extends Activity {
         btnBindValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (isInboundActionLocked()) {
+                    Toast.makeText(InboundActivity.this, "入库任务执行中，请稍后再操作", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 if (storageLevel == null) {
                     Toast.makeText(InboundActivity.this, "请先选择存放库位", Toast.LENGTH_SHORT).show();
                     return;
@@ -153,6 +161,10 @@ public class InboundActivity extends Activity {
         btnSelectInboundStation.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (isInboundActionLocked()) {
+                    Toast.makeText(InboundActivity.this, "入库任务执行中，请稍后再操作", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 showInboundStationDialog();
             }
         });
@@ -408,7 +420,7 @@ public class InboundActivity extends Activity {
             return;
         }
         callInboundInProgress = true;
-        refreshCallInboundButtonState();
+        updateInboundActionLocks();
         // 显示加载提示
         Toast.makeText(this, "正在创建入库任务...", Toast.LENGTH_SHORT).show();
         
@@ -452,7 +464,7 @@ public class InboundActivity extends Activity {
                             } else {
                                 Toast.makeText(InboundActivity.this, "呼叫入库失败", Toast.LENGTH_SHORT).show();
                             }
-                            refreshCallInboundButtonState();
+                            updateInboundActionLocks();
                         }
                     });
                 } catch (Exception e) {
@@ -462,7 +474,7 @@ public class InboundActivity extends Activity {
                         public void run() {
                             callInboundInProgress = false;
                             Toast.makeText(InboundActivity.this, "呼叫入库失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            refreshCallInboundButtonState();
+                            updateInboundActionLocks();
                         }
                     });
                 }
@@ -501,14 +513,30 @@ public class InboundActivity extends Activity {
     }
 
     private void refreshCallInboundButtonState() {
-        btnCallInbound.setEnabled(!callInboundInProgress);
-        if (callInboundInProgress) {
-            btnCallInbound.setAlpha(0.4f);
-            btnCallInbound.setText(callInboundLabel + "（处理中）");
-        } else {
+        boolean callInboundEnabled = !callInboundInProgress;
+        btnCallInbound.setEnabled(callInboundEnabled);
+        if (callInboundEnabled) {
             btnCallInbound.setAlpha(1.0f);
             btnCallInbound.setText(callInboundLabel);
+        } else {
+            btnCallInbound.setAlpha(0.4f);
+            btnCallInbound.setText(callInboundLabel + "（处理中）");
         }
+    }
+
+    private boolean isInboundActionLocked() {
+        return callInboundInProgress;
+    }
+
+    private void updateInboundActionLocks() {
+        boolean enabled = !isInboundActionLocked();
+        btnScanPallet.setEnabled(enabled);
+        btnScanPallet.setAlpha(enabled ? 1.0f : 0.4f);
+        btnBindValve.setEnabled(enabled);
+        btnBindValve.setAlpha(enabled ? 1.0f : 0.4f);
+        btnSelectInboundStation.setEnabled(enabled);
+        btnSelectInboundStation.setAlpha(enabled ? 1.0f : 0.4f);
+        refreshCallInboundButtonState();
     }
 
     private void showInboundStationDialog() {

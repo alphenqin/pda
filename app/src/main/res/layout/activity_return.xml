@@ -191,23 +191,12 @@
             android:background="#2196F3"
             android:textColor="#FFFFFF" />
 
-        <Button
-            android:id="@+id/btnCallPallet"
-            android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:layout_marginBottom="16dp"
-            android:text="2. 呼叫空托"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:background="#FF9800"
-            android:textColor="#FFFFFF" />
-
         <!-- 阀门回库按钮 -->
         <Button
             android:id="@+id/btnValveReturn"
             android:layout_width="match_parent"
             android:layout_height="100dp"
-            android:text="3. 样品回库"
+            android:text="2. 样品回库"
             android:textSize="24sp"
             android:textStyle="bold"
             android:background="#4CAF50"

@@ -101,6 +101,10 @@ public class OutboundActivity extends Activity {
         btnSelectValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (outboundLocked || outboundEmptyReturnLocked || outboundInProgress || outboundEmptyReturnInProgress) {
+                    Toast.makeText(OutboundActivity.this, "任务执行中，请稍后再选择样品", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 // 跳转到选阀门页面
                 Intent intent = new Intent(OutboundActivity.this, SelectValveActivity.class);
                 intent.putExtra("taskType", "OUTBOUND");
@@ -386,6 +390,10 @@ public class OutboundActivity extends Activity {
     private void updateOutboundEmptyReturnLockUi() {
         boolean locked = outboundEmptyReturnLocked || outboundEmptyReturnInProgress;
         boolean outboundLockedLocal = outboundLocked || outboundInProgress;
+        boolean selectValveEnabled = !locked && !outboundLockedLocal;
+        btnSelectValve.setEnabled(selectValveEnabled);
+        btnSelectValve.setAlpha(selectValveEnabled ? 1.0f : 0.4f);
+
         boolean callOutboundEnabled = !locked && !outboundLockedLocal;
         btnCallOutbound.setEnabled(callOutboundEnabled);
         if (callOutboundEnabled) {

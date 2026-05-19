@@ -37,10 +37,8 @@ public class ReturnWarehouseActivity extends Activity {
     private TextView tvStorageFloor;
     private View viewStatus;
     private Button btnSelectValve;
-    private Button btnCallPallet;
     private Button btnValveReturn;
     private Button btnBack;
-    private CharSequence callPalletLabel;
     private CharSequence valveReturnLabel;
     
     private WmsApiService wmsApiService;
@@ -69,9 +67,7 @@ public class ReturnWarehouseActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable lockStatusRunnable;
     private long lastLockStatusErrorAt = 0L;
-    private boolean returnCallLocked = false;
     private boolean returnValveLocked = false;
-    private boolean callPalletInProgress = false;
     private boolean valveReturnInProgress = false;
 
     @Override
@@ -93,10 +89,8 @@ public class ReturnWarehouseActivity extends Activity {
         tvStorageFloor = (TextView) findViewById(R.id.tvStorageFloor);
         viewStatus = findViewById(R.id.viewStatus);
         btnSelectValve = (Button) findViewById(R.id.btnSelectValve);
-        btnCallPallet = (Button) findViewById(R.id.btnCallPallet);
         btnValveReturn = (Button) findViewById(R.id.btnValveReturn);
         btnBack = (Button) findViewById(R.id.btnBack);
-        callPalletLabel = btnCallPallet.getText();
         valveReturnLabel = btnValveReturn.getText();
         
         updateStatus(false);
@@ -121,13 +115,6 @@ public class ReturnWarehouseActivity extends Activity {
             }
         });
         
-        btnCallPallet.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showReturnStationDialog();
-            }
-        });
-        
         btnValveReturn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -145,14 +132,18 @@ public class ReturnWarehouseActivity extends Activity {
             return;
         }
         if (isBlank(returnOutsideSite) || storageLevel == null || isBlank(binCode)) {
-            Toast.makeText(this, "请先选择库外站点/存放库位", Toast.LENGTH_SHORT).show();
+            showReturnStationDialog();
             return;
         }
         if (returnValveLocked || valveReturnInProgress) {
             Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
+        showValveReturnConfirm();
+    }
+
+    private void showValveReturnConfirm() {
         new AlertDialog.Builder(this)
             .setTitle("确认样品回库")
             .setMessage("出厂编号：" + selectedValve.getValveNo()
@@ -298,25 +289,8 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private void updateButtonLocks() {
-        boolean callPalletLocked = returnCallLocked;
         boolean valveReturnLocked = returnValveLocked;
-        boolean callPalletEnabled = !callPalletLocked && !valveReturnLocked && !callPalletInProgress;
-        btnCallPallet.setEnabled(callPalletEnabled);
-        if (callPalletEnabled) {
-            btnCallPallet.setAlpha(1.0f);
-            btnCallPallet.setText(callPalletLabel);
-        } else {
-            btnCallPallet.setAlpha(0.4f);
-            if (valveReturnLocked) {
-                btnCallPallet.setText(callPalletLabel + "（样品回库中）");
-            } else if (callPalletInProgress) {
-                btnCallPallet.setText(callPalletLabel + "（处理中）");
-            } else {
-                btnCallPallet.setText(callPalletLabel + "（锁定中）");
-            }
-        }
-
-        boolean valveReturnEnabled = !callPalletLocked && !valveReturnLocked && !valveReturnInProgress;
+        boolean valveReturnEnabled = !valveReturnLocked && !valveReturnInProgress;
         btnValveReturn.setEnabled(valveReturnEnabled);
         if (valveReturnEnabled) {
             btnValveReturn.setAlpha(1.0f);
@@ -476,7 +450,7 @@ public class ReturnWarehouseActivity extends Activity {
                             tvPalletNo.setText(displayText(selectedValve != null ? selectedValve.getValveNo() : null));
                             tvLocationCode.setText(binCode);
                             updateStatus(true);
-                            showCallPalletConfirm();
+                            callValveReturn();
                         }
                     });
                 } catch (Exception e) {
@@ -488,93 +462,6 @@ public class ReturnWarehouseActivity extends Activity {
                             tvLocationCode.setText("--");
                             updateStatus(false);
                             Toast.makeText(ReturnWarehouseActivity.this, "查询库位失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            }
-        }).start();
-    }
-
-    private void showCallPalletConfirm() {
-        if (isBlank(returnOutsideSite) || isBlank(binCode)) {
-            return;
-        }
-        new AlertDialog.Builder(this)
-            .setTitle("确认呼叫空托")
-            .setMessage("空托库位：" + binCode
-                + "\n库外站点：" + returnOutsideSite
-                + "\n存放库位：" + getStorageFloorText())
-            .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(android.content.DialogInterface dialog, int which) {
-                    performCallPallet();
-                }
-            })
-            .setNegativeButton("取消", null)
-            .show();
-    }
-
-    private void performCallPallet() {
-        if (callPalletInProgress) {
-            Toast.makeText(this, "呼叫空托下发中，请稍后再试", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (selectedValve == null) {
-            Toast.makeText(this, "请先选择出厂编号", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (isBlank(returnOutsideSite) || storageLevel == null || isBlank(binCode)) {
-            Toast.makeText(this, "请先选择库外站点/存放库位", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        callPalletInProgress = true;
-        updateButtonLocks();
-        Toast.makeText(this, "正在创建呼叫空托任务...", Toast.LENGTH_SHORT).show();
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    String outId = DateUtil.generateTaskNo("R");
-                    Map<String, String> params = new HashMap<>();
-                    params.put("taskType", Task.TYPE_RETURN);
-                    params.put("outID", outId);
-                    params.put("deviceCode", PreferenceUtil.getDeviceCode(ReturnWarehouseActivity.this));
-                    params.put("palletNo", binCode);
-                    params.put("fromBinCode", binCode);
-                    params.put("toBinCode", returnOutsideSite);
-                    params.put("storageLevel", String.valueOf(storageLevel));
-                    params.put("remark", "RETURN_CALL_PALLET");
-                    if (selectedValve != null && selectedValve.getValveNo() != null) {
-                        params.put("valveNo", selectedValve.getValveNo());
-                    }
-                    applyAgvRange(params);
-                    TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            callPalletInProgress = false;
-                            if (result != null) {
-                                String taskNo = result.getOutID() != null ? result.getOutID() : outId;
-                                Toast.makeText(ReturnWarehouseActivity.this,
-                                    "呼叫空托任务已下发，任务号：" + taskNo,
-                                    Toast.LENGTH_LONG).show();
-                            } else {
-                                Toast.makeText(ReturnWarehouseActivity.this, "呼叫空托下发失败", Toast.LENGTH_SHORT).show();
-                            }
-                            updateButtonLocks();
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            callPalletInProgress = false;
-                            Toast.makeText(ReturnWarehouseActivity.this, "呼叫空托失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            updateButtonLocks();
                         }
                     });
                 }
@@ -676,12 +563,10 @@ public class ReturnWarehouseActivity extends Activity {
             public void run() {
                 try {
                     TaskLockStatus status = wmsApiService.getTaskLockStatus(ReturnWarehouseActivity.this);
-                    boolean callLocked = status != null && status.isReturnCallLocked();
                     boolean valveLocked = status != null && status.isReturnValveLocked();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            returnCallLocked = callLocked;
                             returnValveLocked = valveLocked;
                             updateButtonLocks();
                         }

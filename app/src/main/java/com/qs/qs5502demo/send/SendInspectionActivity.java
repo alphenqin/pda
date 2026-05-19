@@ -99,6 +99,10 @@ public class SendInspectionActivity extends Activity {
         btnSelectValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (inspectionLocked || inspectionEmptyReturnLocked || callSendInProgress || emptyReturnInProgress) {
+                    Toast.makeText(SendInspectionActivity.this, "任务执行中，请稍后再选择样品", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 // 跳转到选阀门页面
                 Intent intent = new Intent(SendInspectionActivity.this, SelectValveActivity.class);
                 intent.putExtra("taskType", "SEND_INSPECTION");
@@ -198,9 +202,7 @@ public class SendInspectionActivity extends Activity {
             return;
         }
         callSendInProgress = true;
-        btnCallSend.setEnabled(false);
-        btnCallSend.setAlpha(0.4f);
-        btnCallSend.setText(callSendLabel + "（处理中）");
+        applyInspectionLock(inspectionLocked, inspectionEmptyReturnLocked);
         Toast.makeText(this, "正在创建送检任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
@@ -291,9 +293,7 @@ public class SendInspectionActivity extends Activity {
             return;
         }
         emptyReturnInProgress = true;
-        btnEmptyPalletReturn.setEnabled(false);
-        btnEmptyPalletReturn.setAlpha(0.4f);
-        btnEmptyPalletReturn.setText(emptyReturnLabel + "（处理中）");
+        applyInspectionLock(inspectionLocked, inspectionEmptyReturnLocked);
         Toast.makeText(this, "正在创建空托回库任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
@@ -327,6 +327,7 @@ public class SendInspectionActivity extends Activity {
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 PreferenceUtil.clearLastSendInspectionValve(SendInspectionActivity.this);
+                                applySelectedValve(null);
                                 Toast.makeText(SendInspectionActivity.this, 
                                     "空托回库成功，任务号：" + taskNo,
                                     Toast.LENGTH_LONG).show();
@@ -435,6 +436,10 @@ public class SendInspectionActivity extends Activity {
     private void applyInspectionLock(boolean locked, boolean emptyReturnLocked) {
         inspectionLocked = locked;
         inspectionEmptyReturnLocked = emptyReturnLocked;
+        boolean selectValveEnabled = !inspectionLocked && !inspectionEmptyReturnLocked && !callSendInProgress && !emptyReturnInProgress;
+        btnSelectValve.setEnabled(selectValveEnabled);
+        btnSelectValve.setAlpha(selectValveEnabled ? 1.0f : 0.4f);
+
         boolean callSendEnabled = !inspectionLocked && !callSendInProgress;
         btnCallSend.setEnabled(callSendEnabled);
         if (callSendEnabled) {

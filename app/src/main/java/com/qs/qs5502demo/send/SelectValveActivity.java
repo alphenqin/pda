@@ -117,7 +117,7 @@ public class SelectValveActivity extends Activity {
             } else if ("OUTBOUND".equals(taskType)) {
                 params.put("valveStatus", "IN_STOCK,INSPECTED"); // 出库查询待检测和已检测的
             } else if ("RETURN".equals(taskType)) {
-                params.put("valveStatus", "INSPECTED"); // 回库只查询已检测的
+                params.put("valveStatus", "IN_INSPECTION"); // 回库只查询检测中的
             }
         }
         
