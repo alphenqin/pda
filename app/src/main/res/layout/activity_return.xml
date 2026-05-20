@@ -82,13 +82,13 @@
             <TextView
                 android:layout_width="120dp"
                 android:layout_height="wrap_content"
-                android:text="库外站点："
+                android:text="存放库位："
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
 
             <TextView
-                android:id="@+id/tvReturnStation"
+                android:id="@+id/tvStorageFloor"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -106,13 +106,13 @@
             <TextView
                 android:layout_width="120dp"
                 android:layout_height="wrap_content"
-                android:text="存放库位："
+                android:text="库外站点："
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
 
             <TextView
-                android:id="@+id/tvStorageFloor"
+                android:id="@+id/tvReturnStation"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -181,11 +181,22 @@
         android:gravity="center">
 
         <Button
+            android:id="@+id/btnSelectReturnStation"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginBottom="16dp"
+            android:text="1. 选择库外站点/存放库位"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:background="#009688"
+            android:textColor="#FFFFFF" />
+
+        <Button
             android:id="@+id/btnSelectValve"
             android:layout_width="match_parent"
             android:layout_height="100dp"
             android:layout_marginBottom="16dp"
-            android:text="1. 选样品"
+            android:text="2. 选样品"
             android:textSize="24sp"
             android:textStyle="bold"
             android:background="#2196F3"
@@ -196,7 +207,7 @@
             android:id="@+id/btnValveReturn"
             android:layout_width="match_parent"
             android:layout_height="100dp"
-            android:text="2. 样品回库"
+            android:text="3. 样品回库"
             android:textSize="24sp"
             android:textStyle="bold"
             android:background="#4CAF50"

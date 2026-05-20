@@ -36,6 +36,7 @@ public class ReturnWarehouseActivity extends Activity {
     private TextView tvReturnStation;
     private TextView tvStorageFloor;
     private View viewStatus;
+    private Button btnSelectReturnStation;
     private Button btnSelectValve;
     private Button btnValveReturn;
     private Button btnBack;
@@ -90,6 +91,7 @@ public class ReturnWarehouseActivity extends Activity {
         tvReturnStation = (TextView) findViewById(R.id.tvReturnStation);
         tvStorageFloor = (TextView) findViewById(R.id.tvStorageFloor);
         viewStatus = findViewById(R.id.viewStatus);
+        btnSelectReturnStation = (Button) findViewById(R.id.btnSelectReturnStation);
         btnSelectValve = (Button) findViewById(R.id.btnSelectValve);
         btnValveReturn = (Button) findViewById(R.id.btnValveReturn);
         btnBack = (Button) findViewById(R.id.btnBack);
@@ -110,10 +112,25 @@ public class ReturnWarehouseActivity extends Activity {
         btnSelectValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (returnValveLocked || valveReturnInProgress) {
+                    Toast.makeText(ReturnWarehouseActivity.this, "样品回库进行中，请稍后再操作", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 // 跳转到选阀门页面
                 Intent intent = new Intent(ReturnWarehouseActivity.this, SelectValveActivity.class);
                 intent.putExtra("taskType", "RETURN");
                 startActivityForResult(intent, 300);
+            }
+        });
+
+        btnSelectReturnStation.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (returnValveLocked || valveReturnInProgress) {
+                    Toast.makeText(ReturnWarehouseActivity.this, "样品回库进行中，请稍后再操作", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                showReturnStationDialog();
             }
         });
         
@@ -133,8 +150,12 @@ public class ReturnWarehouseActivity extends Activity {
             Toast.makeText(this, "请先选择出厂编号", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (isBlank(returnOutsideSite) || storageLevel == null || isBlank(binCode)) {
-            showReturnStationDialog();
+        if (isBlank(returnOutsideSite) || storageLevel == null) {
+            Toast.makeText(this, "请先选择库外站点/存放库位", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (isBlank(binCode)) {
+            Toast.makeText(this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
             return;
         }
         if (returnValveLocked || valveReturnInProgress) {
@@ -293,6 +314,11 @@ public class ReturnWarehouseActivity extends Activity {
     private void updateButtonLocks() {
         boolean valveReturnLocked = returnValveLocked;
         boolean valveReturnEnabled = !valveReturnLocked && !valveReturnInProgress;
+        boolean selectionEnabled = valveReturnEnabled;
+        btnSelectReturnStation.setEnabled(selectionEnabled);
+        btnSelectValve.setEnabled(selectionEnabled);
+        btnSelectReturnStation.setAlpha(selectionEnabled ? 1.0f : 0.4f);
+        btnSelectValve.setAlpha(selectionEnabled ? 1.0f : 0.4f);
         btnValveReturn.setEnabled(valveReturnEnabled);
         if (valveReturnEnabled) {
             btnValveReturn.setAlpha(1.0f);
@@ -310,10 +336,6 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private void showReturnStationDialog() {
-        if (selectedValve == null) {
-            Toast.makeText(this, "请先选择出厂编号", Toast.LENGTH_SHORT).show();
-            return;
-        }
         String[] stations = getReturnStationOptions();
         int selectedIndex = -1;
         for (int i = 0; i < stations.length; i++) {
@@ -338,7 +360,7 @@ public class ReturnWarehouseActivity extends Activity {
         for (int i = 0; i < stations.length; i++) {
             RadioButton item = new RadioButton(this);
             item.setId(stationIdBase + i);
-            item.setText(stations[i]);
+            item.setText(formatReturnStationLabel(stations[i]));
             item.setTextSize(16);
             stationGroup.addView(item);
             if (i == selectedIndex) {
@@ -403,9 +425,15 @@ public class ReturnWarehouseActivity extends Activity {
                     }
                     returnOutsideSite = stations[stationIndex];
                     storageLevel = floorCheckedId == firstFloorId ? 1 : (floorCheckedId == secondFloorId ? 2 : 3);
-                    tvReturnStation.setText(returnOutsideSite);
+                    tvReturnStation.setText(formatReturnStationLabel(returnOutsideSite));
                     tvStorageFloor.setText(getStorageFloorText());
-                    fetchAvailableBinForReturnSelection();
+                    if (selectedValve == null) {
+                        binCode = null;
+                        tvLocationCode.setText("--");
+                        updateStatus(false);
+                    } else {
+                        fetchAvailableBinForReturnSelection();
+                    }
                 }
             })
             .setNegativeButton("取消", null)
@@ -452,7 +480,6 @@ public class ReturnWarehouseActivity extends Activity {
                             tvPalletNo.setText(displayText(selectedValve != null ? selectedValve.getValveNo() : null));
                             tvLocationCode.setText(binCode);
                             updateStatus(true);
-                            callValveReturn();
                         }
                     });
                 } catch (Exception e) {
@@ -493,6 +520,22 @@ public class ReturnWarehouseActivity extends Activity {
         };
     }
 
+    private String formatReturnStationLabel(String station) {
+        if (isBlank(station)) {
+            return "未选择";
+        }
+        if (SMALL_RETURN_OUTSIDE_SITE_1.equals(station)
+            || SMALL_RETURN_OUTSIDE_SITE_2.equals(station)
+            || SMALL_RETURN_OUTSIDE_SITE_3.equals(station)
+            || SMALL_RETURN_OUTSIDE_SITE_4.equals(station)) {
+            return station + "(小托盘)";
+        }
+        if (LARGE_RETURN_OUTSIDE_SITE.equals(station)) {
+            return station + "(大托盘)";
+        }
+        return station;
+    }
+
     private boolean isReturnStationAllowed(String station, String palletType) {
         if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
             return LARGE_RETURN_OUTSIDE_SITE.equals(station);
@@ -511,13 +554,13 @@ public class ReturnWarehouseActivity extends Activity {
             return "未选择";
         }
         if (storageLevel == 1) {
-            return "存放在一层";
+            return "一层";
         }
         if (storageLevel == 2) {
-            return "存放在二层";
+            return "二层";
         }
         if (storageLevel == 3) {
-            return "存放在三层";
+            return "三层";
         }
         return "未选择";
     }
@@ -615,16 +658,20 @@ public class ReturnWarehouseActivity extends Activity {
                     oldBinCode = trimToNull(selectedValve.getRemark());
                 }
                 binCode = null;
-                returnOutsideSite = null;
-                storageLevel = null;
                 matCode = trimToNull(selectedValve.getMatCode());
                 inspectionTargetBin = selectedValve.getInspectionTargetBin();
 
                 tvPalletNo.setText(displayText(selectedValve.getValveNo()));
                 tvLocationCode.setText("--");
-                tvReturnStation.setText("未选择");
-                tvStorageFloor.setText("未选择");
                 updateStatus(false);
+                if (isBlank(returnOutsideSite) || storageLevel == null) {
+                    tvReturnStation.setText("未选择");
+                    tvStorageFloor.setText("未选择");
+                } else {
+                    tvReturnStation.setText(formatReturnStationLabel(returnOutsideSite));
+                    tvStorageFloor.setText(getStorageFloorText());
+                    fetchAvailableBinForReturnSelection();
+                }
             }
         }
     }
