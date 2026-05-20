@@ -15,6 +15,7 @@ public class Valve implements Serializable {
     private String inspectionDate;  // 送检日期
     private String returnDate;      // 回库日期
     private String binCode;         // 库位号，与调度系统 binCode 一致
+    private Integer binType;        // 库位类型：1小托盘、2大托盘
     private String locationCode;    // 库位号（兼容旧字段）
     private String valveStatus;     // 阀门状态：IN_STOCK/IN_INSPECTION/INSPECTED/OUTBOUND
     private String inspectionTargetBin; // 送检目标站点（如 Z6-装卸点/Z7-装卸点）
@@ -87,6 +88,14 @@ public class Valve implements Serializable {
     public void setBinCode(String binCode) {
         this.binCode = binCode;
         this.locationCode = binCode; // 兼容旧字段
+    }
+
+    public Integer getBinType() {
+        return binType;
+    }
+
+    public void setBinType(Integer binType) {
+        this.binType = binType;
     }
 
     public String getLocationCode() {

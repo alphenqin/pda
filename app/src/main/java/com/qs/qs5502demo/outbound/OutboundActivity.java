@@ -47,6 +47,8 @@ public class OutboundActivity extends Activity {
     private String lastOutboundToBinCode;
     private static final String PALLET_TYPE_SMALL = "t1";
     private static final String PALLET_TYPE_LARGE = "t2";
+    private static final int BIN_TYPE_SMALL_PALLET = 1;
+    private static final int BIN_TYPE_LARGE_PALLET = 2;
     private static final String SMALL_BUFFER_BIN = "B3-15-01";
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
@@ -419,31 +421,21 @@ public class OutboundActivity extends Activity {
         }
     }
 
-    private String resolvePalletTypeCodeByBinCode(String binCode) {
-        Integer bay = extractBinBay(binCode);
-        if (bay == null) {
+    private String resolvePalletTypeCodeByBinType(Integer binType) {
+        if (binType == null) {
             return null;
         }
-        return bay >= 13 ? PALLET_TYPE_LARGE : PALLET_TYPE_SMALL;
-    }
-
-    private Integer extractBinBay(String binCode) {
-        if (isBlank(binCode)) {
-            return null;
+        if (binType == BIN_TYPE_LARGE_PALLET) {
+            return PALLET_TYPE_LARGE;
         }
-        String[] parts = binCode.trim().split("-");
-        if (parts.length < 2) {
-            return null;
+        if (binType == BIN_TYPE_SMALL_PALLET) {
+            return PALLET_TYPE_SMALL;
         }
-        try {
-            return Integer.valueOf(parts[1]);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return null;
     }
 
     private String resolveOutboundEmptyReturnStart() {
-        String palletType = resolvePalletTypeCodeByBinCode(binCode);
+        String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
         if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
             return LARGE_OUTBOUND_RETURN_START;
         }
@@ -454,7 +446,7 @@ public class OutboundActivity extends Activity {
     }
 
     private String resolveOutboundTarget() {
-        String palletType = resolvePalletTypeCodeByBinCode(binCode);
+        String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
         if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
             return LARGE_OUTBOUND_RETURN_START;
         }

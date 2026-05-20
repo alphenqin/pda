@@ -53,6 +53,8 @@ public class ReturnWarehouseActivity extends Activity {
     private Valve selectedValve;
     private static final String PALLET_TYPE_SMALL = "t1";
     private static final String PALLET_TYPE_LARGE = "t2";
+    private static final int BIN_TYPE_SMALL_PALLET = 1;
+    private static final int BIN_TYPE_LARGE_PALLET = 2;
     private static final String SMALL_BUFFER_BIN = "B3-15-01";
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
@@ -172,7 +174,7 @@ public class ReturnWarehouseActivity extends Activity {
             public void run() {
                 try {
                     String effectivePalletNo = getEffectivePalletNo();
-                    String palletType = resolvePalletTypeCodeByBinCode(binCode);
+                    String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
                     if (palletType == null) {
                         runOnUiThread(new Runnable() {
                             @Override
@@ -411,7 +413,7 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private void fetchAvailableBinForReturnSelection() {
-        String palletType = resolvePalletTypeCodeByBinCode(oldBinCode);
+        String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
         if (palletType == null) {
             Toast.makeText(this, "无法识别原库位类型", Toast.LENGTH_SHORT).show();
             return;
@@ -470,7 +472,7 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private String[] getReturnStationOptions() {
-        String palletType = resolvePalletTypeCodeByBinCode(oldBinCode);
+        String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
         if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
             return new String[]{LARGE_RETURN_OUTSIDE_SITE};
         }
@@ -587,27 +589,17 @@ public class ReturnWarehouseActivity extends Activity {
         }).start();
     }
 
-    private String resolvePalletTypeCodeByBinCode(String binCode) {
-        Integer bay = extractBinBay(binCode);
-        if (bay == null) {
+    private String resolvePalletTypeCodeByBinType(Integer binType) {
+        if (binType == null) {
             return null;
         }
-        return bay >= 13 ? PALLET_TYPE_LARGE : PALLET_TYPE_SMALL;
-    }
-
-    private Integer extractBinBay(String binCode) {
-        if (isBlank(binCode)) {
-            return null;
+        if (binType == BIN_TYPE_LARGE_PALLET) {
+            return PALLET_TYPE_LARGE;
         }
-        String[] parts = binCode.trim().split("-");
-        if (parts.length < 2) {
-            return null;
+        if (binType == BIN_TYPE_SMALL_PALLET) {
+            return PALLET_TYPE_SMALL;
         }
-        try {
-            return Integer.valueOf(parts[1]);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return null;
     }
 
     @Override

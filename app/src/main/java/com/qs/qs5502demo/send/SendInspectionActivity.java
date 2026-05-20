@@ -34,6 +34,8 @@ public class SendInspectionActivity extends Activity {
     private static final long INSPECTION_LOCK_POLL_MS = 5000L;
     private static final String SMALL_PALLET_INSPECTION_BIN = "Z6-装卸点";
     private static final String LARGE_PALLET_INSPECTION_BIN = "Z7-装卸点";
+    private static final int BIN_TYPE_SMALL_PALLET = 1;
+    private static final int BIN_TYPE_LARGE_PALLET = 2;
     
     private TextView tvPalletNo;
     private TextView tvLocationCode;
@@ -144,7 +146,7 @@ public class SendInspectionActivity extends Activity {
     }
 
     private String resolveInspectionTargetBin() {
-        String palletType = resolvePalletTypeByBinCode(binCode);
+        String palletType = resolvePalletTypeByBinType(selectedValve == null ? null : selectedValve.getBinType());
         if ("large".equals(palletType)) {
             return LARGE_PALLET_INSPECTION_BIN;
         }
@@ -154,27 +156,17 @@ public class SendInspectionActivity extends Activity {
         return null;
     }
 
-    private String resolvePalletTypeByBinCode(String binCode) {
-        Integer bay = extractBinBay(binCode);
-        if (bay == null) {
+    private String resolvePalletTypeByBinType(Integer binType) {
+        if (binType == null) {
             return null;
         }
-        return bay >= 13 ? "large" : "small";
-    }
-
-    private Integer extractBinBay(String binCode) {
-        if (isBlank(binCode)) {
-            return null;
+        if (binType == BIN_TYPE_LARGE_PALLET) {
+            return "large";
         }
-        String[] parts = binCode.trim().split("-");
-        if (parts.length < 2) {
-            return null;
+        if (binType == BIN_TYPE_SMALL_PALLET) {
+            return "small";
         }
-        try {
-            return Integer.valueOf(parts[1]);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return null;
     }
 
     private void showSendInspectionConfirm(String targetBinCode) {
