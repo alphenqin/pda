@@ -54,8 +54,6 @@ public class ReturnWarehouseActivity extends Activity {
     private Valve selectedValve;
     private static final String PALLET_TYPE_SMALL = "t1";
     private static final String PALLET_TYPE_LARGE = "t2";
-    private static final int BIN_TYPE_SMALL_PALLET = 1;
-    private static final int BIN_TYPE_LARGE_PALLET = 2;
     private static final String SMALL_BUFFER_BIN = "B3-15-01";
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
@@ -195,12 +193,12 @@ public class ReturnWarehouseActivity extends Activity {
             public void run() {
                 try {
                     String effectivePalletNo = getEffectivePalletNo();
-                    String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
+                    String palletType = resolvePalletTypeCodeByOutsideSite(returnOutsideSite);
                     if (palletType == null) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(ReturnWarehouseActivity.this, "无法识别目标库位类型", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ReturnWarehouseActivity.this, "无法识别库外站点类型", Toast.LENGTH_SHORT).show();
                             }
                         });
                         return;
@@ -427,13 +425,7 @@ public class ReturnWarehouseActivity extends Activity {
                     storageLevel = floorCheckedId == firstFloorId ? 1 : (floorCheckedId == secondFloorId ? 2 : 3);
                     tvReturnStation.setText(formatReturnStationLabel(returnOutsideSite));
                     tvStorageFloor.setText(getStorageFloorText());
-                    if (selectedValve == null) {
-                        binCode = null;
-                        tvLocationCode.setText("--");
-                        updateStatus(false);
-                    } else {
-                        fetchAvailableBinForReturnSelection();
-                    }
+                    fetchAvailableBinForReturnSelection();
                 }
             })
             .setNegativeButton("取消", null)
@@ -441,20 +433,9 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private void fetchAvailableBinForReturnSelection() {
-        String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
+        String palletType = resolvePalletTypeCodeByOutsideSite(returnOutsideSite);
         if (palletType == null) {
-            Toast.makeText(this, "无法识别原库位类型", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!isReturnStationAllowed(returnOutsideSite, palletType)) {
-            Toast.makeText(this, "当前样品托盘类型不支持该库外站点", Toast.LENGTH_SHORT).show();
-            returnOutsideSite = null;
-            storageLevel = null;
-            binCode = null;
-            tvReturnStation.setText("未选择");
-            tvStorageFloor.setText("未选择");
-            tvLocationCode.setText("--");
-            updateStatus(false);
+            Toast.makeText(this, "无法识别库外站点类型", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -499,18 +480,6 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private String[] getReturnStationOptions() {
-        String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
-        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
-            return new String[]{LARGE_RETURN_OUTSIDE_SITE};
-        }
-        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
-            return new String[]{
-                SMALL_RETURN_OUTSIDE_SITE_1,
-                SMALL_RETURN_OUTSIDE_SITE_2,
-                SMALL_RETURN_OUTSIDE_SITE_3,
-                SMALL_RETURN_OUTSIDE_SITE_4
-            };
-        }
         return new String[]{
             SMALL_RETURN_OUTSIDE_SITE_1,
             SMALL_RETURN_OUTSIDE_SITE_2,
@@ -534,19 +503,6 @@ public class ReturnWarehouseActivity extends Activity {
             return station + "(大托盘)";
         }
         return station;
-    }
-
-    private boolean isReturnStationAllowed(String station, String palletType) {
-        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
-            return LARGE_RETURN_OUTSIDE_SITE.equals(station);
-        }
-        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
-            return SMALL_RETURN_OUTSIDE_SITE_1.equals(station)
-                || SMALL_RETURN_OUTSIDE_SITE_2.equals(station)
-                || SMALL_RETURN_OUTSIDE_SITE_3.equals(station)
-                || SMALL_RETURN_OUTSIDE_SITE_4.equals(station);
-        }
-        return false;
     }
 
     private String getStorageFloorText() {
@@ -632,17 +588,14 @@ public class ReturnWarehouseActivity extends Activity {
         }).start();
     }
 
-    private String resolvePalletTypeCodeByBinType(Integer binType) {
-        if (binType == null) {
+    private String resolvePalletTypeCodeByOutsideSite(String outsideSite) {
+        if (isBlank(outsideSite)) {
             return null;
         }
-        if (binType == BIN_TYPE_LARGE_PALLET) {
+        if (LARGE_RETURN_OUTSIDE_SITE.equals(outsideSite)) {
             return PALLET_TYPE_LARGE;
         }
-        if (binType == BIN_TYPE_SMALL_PALLET) {
-            return PALLET_TYPE_SMALL;
-        }
-        return null;
+        return PALLET_TYPE_SMALL;
     }
 
     @Override
@@ -657,26 +610,30 @@ public class ReturnWarehouseActivity extends Activity {
                 if (oldBinCode == null) {
                     oldBinCode = trimToNull(selectedValve.getRemark());
                 }
-                binCode = null;
                 matCode = trimToNull(selectedValve.getMatCode());
                 inspectionTargetBin = selectedValve.getInspectionTargetBin();
 
                 tvPalletNo.setText(displayText(selectedValve.getValveNo()));
-                tvLocationCode.setText("--");
-                updateStatus(false);
+                tvLocationCode.setText(displayText(binCode));
+                updateStatus(!isBlank(binCode));
                 if (isBlank(returnOutsideSite) || storageLevel == null) {
                     tvReturnStation.setText("未选择");
                     tvStorageFloor.setText("未选择");
                 } else {
                     tvReturnStation.setText(formatReturnStationLabel(returnOutsideSite));
                     tvStorageFloor.setText(getStorageFloorText());
-                    fetchAvailableBinForReturnSelection();
+                    if (isBlank(binCode)) {
+                        fetchAvailableBinForReturnSelection();
+                    }
                 }
             }
         }
     }
 
     private String getEffectivePalletNo() {
+        if (!isBlank(binCode)) {
+            return binCode;
+        }
         if (!isBlank(palletNo)) {
             return palletNo;
         }
