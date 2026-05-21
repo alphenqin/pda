@@ -243,10 +243,22 @@ public class WmsApiService {
      * 托盘置空接口
      */
     public boolean unbindPallet(String palletNo, Context context) throws IOException {
+        return unbindPallet(palletNo, null, null, context);
+    }
+
+    public boolean unbindPallet(String palletNo, String valveNo, String binCode, Context context) throws IOException {
         String url = getBaseUrl() + "/pallet/unbind";
 
         Map<String, String> request = new HashMap<>();
-        request.put("palletNo", palletNo);
+        if (palletNo != null) {
+            request.put("palletNo", palletNo);
+        }
+        if (valveNo != null) {
+            request.put("valveNo", valveNo);
+        }
+        if (binCode != null) {
+            request.put("binCode", binCode);
+        }
 
         String json = HttpUtil.toJson(request);
         String response = HttpUtil.post(url, json, context);

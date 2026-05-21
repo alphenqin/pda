@@ -110,7 +110,7 @@ public class ReturnWarehouseActivity extends Activity {
         btnSelectValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (returnValveLocked || valveReturnInProgress) {
+                if (valveReturnInProgress) {
                     Toast.makeText(ReturnWarehouseActivity.this, "样品回库进行中，请稍后再操作", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -124,7 +124,7 @@ public class ReturnWarehouseActivity extends Activity {
         btnSelectReturnStation.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (returnValveLocked || valveReturnInProgress) {
+                if (valveReturnInProgress) {
                     Toast.makeText(ReturnWarehouseActivity.this, "样品回库进行中，请稍后再操作", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -156,7 +156,7 @@ public class ReturnWarehouseActivity extends Activity {
             Toast.makeText(this, "未获取到可用库位", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (returnValveLocked || valveReturnInProgress) {
+        if (valveReturnInProgress) {
             Toast.makeText(this, "样品回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -246,7 +246,7 @@ public class ReturnWarehouseActivity extends Activity {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outId;
                                 resetReturnFormAfterQueue();
                                 Toast.makeText(ReturnWarehouseActivity.this, 
-                                    "样品回库任务已下发，任务号：" + taskNo,
+                                    "样品回库任务已加入队列，任务号：" + taskNo,
                                     Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(ReturnWarehouseActivity.this, "样品回库下发失败", Toast.LENGTH_SHORT).show();
@@ -310,8 +310,7 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private void updateButtonLocks() {
-        boolean valveReturnLocked = returnValveLocked;
-        boolean valveReturnEnabled = !valveReturnLocked && !valveReturnInProgress;
+        boolean valveReturnEnabled = !valveReturnInProgress;
         boolean selectionEnabled = valveReturnEnabled;
         btnSelectReturnStation.setEnabled(selectionEnabled);
         btnSelectValve.setEnabled(selectionEnabled);
@@ -323,9 +322,7 @@ public class ReturnWarehouseActivity extends Activity {
             btnValveReturn.setText(valveReturnLabel);
         } else {
             btnValveReturn.setAlpha(0.4f);
-            if (valveReturnLocked) {
-                btnValveReturn.setText(valveReturnLabel + "（回库中）");
-            } else if (valveReturnInProgress) {
+            if (valveReturnInProgress) {
                 btnValveReturn.setText(valveReturnLabel + "（处理中）");
             } else {
                 btnValveReturn.setText(valveReturnLabel + "（锁定中）");

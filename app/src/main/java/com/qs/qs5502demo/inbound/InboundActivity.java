@@ -812,7 +812,7 @@ public class InboundActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    boolean success = wmsApiService.unbindPallet(palletNo, InboundActivity.this);
+                    boolean success = wmsApiService.unbindPallet(palletNo, valveNo, binCode, InboundActivity.this);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
