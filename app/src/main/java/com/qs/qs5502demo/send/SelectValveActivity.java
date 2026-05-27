@@ -29,6 +29,7 @@ public class SelectValveActivity extends Activity {
     private static final int VALVE_QUERY_PAGE_SIZE = 100;
     
     private EditText etValveNo;
+    private EditText etVendorName;
     private EditText etInboundDate;
     private Button btnSearch;
     private Button btnConfirm;
@@ -55,6 +56,7 @@ public class SelectValveActivity extends Activity {
     
     private void initViews() {
         etValveNo = (EditText) findViewById(R.id.etValveNo);
+        etVendorName = (EditText) findViewById(R.id.etVendorName);
         etInboundDate = (EditText) findViewById(R.id.etInboundDate);
         btnSearch = (Button) findViewById(R.id.btnSearch);
         btnConfirm = (Button) findViewById(R.id.btnConfirm);
@@ -97,10 +99,14 @@ public class SelectValveActivity extends Activity {
         // 构建查询参数
         final Map<String, String> params = new HashMap<String, String>();
         String valveNo = etValveNo.getText().toString().trim();
+        String vendorName = etVendorName.getText().toString().trim();
         String inboundDate = etInboundDate.getText().toString().trim();
 
         if (!valveNo.isEmpty()) {
             params.put("valveNo", valveNo);
+        }
+        if (!vendorName.isEmpty()) {
+            params.put("vendorName", vendorName);
         }
         if (!inboundDate.isEmpty()) {
             params.put("inboundDate", inboundDate);

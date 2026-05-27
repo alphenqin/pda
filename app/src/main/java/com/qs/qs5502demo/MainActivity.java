@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import com.qs.pda5502demo.R;
 import com.qs.qs5502demo.api.WmsApiService;
+import com.qs.qs5502demo.emptypallet.EmptyPalletReturnActivity;
 import com.qs.qs5502demo.inbound.InboundActivity;
 import com.qs.qs5502demo.outbound.OutboundActivity;
 import com.qs.qs5502demo.returnwarehouse.ReturnWarehouseActivity;
@@ -35,10 +36,12 @@ public class MainActivity extends Activity {
 	private Button btnSendInspection;
 	private Button btnReturn;
 	private Button btnOutbound;
+	private Button btnEmptyPalletReturn;
 	private CharSequence inboundLabel;
 	private CharSequence sendInspectionLabel;
 	private CharSequence returnLabel;
 	private CharSequence outboundLabel;
+	private CharSequence emptyPalletReturnLabel;
 	private Handler handler;
 	private Runnable updateTimeRunnable;
 	private Runnable inboundLockRunnable;
@@ -74,10 +77,12 @@ public class MainActivity extends Activity {
 		btnSendInspection = (Button) findViewById(R.id.btnSendInspection);
 		btnReturn = (Button) findViewById(R.id.btnReturn);
 		btnOutbound = (Button) findViewById(R.id.btnOutbound);
+		btnEmptyPalletReturn = (Button) findViewById(R.id.btnEmptyPalletReturn);
 		inboundLabel = btnInbound.getText();
 		sendInspectionLabel = btnSendInspection.getText();
 		returnLabel = btnReturn.getText();
 		outboundLabel = btnOutbound.getText();
+		emptyPalletReturnLabel = btnEmptyPalletReturn.getText();
 		wmsApiService = new WmsApiService(this);
 		
 		// 显示用户名
@@ -120,6 +125,13 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				navigateIfUnlocked(OutboundActivity.class);
+			}
+		});
+
+		btnEmptyPalletReturn.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				navigateIfUnlocked(EmptyPalletReturnActivity.class);
 			}
 		});
 		
@@ -177,6 +189,11 @@ public class MainActivity extends Activity {
 		if ((targetActivity == SendInspectionActivity.class || targetActivity == ReturnWarehouseActivity.class)
 			&& outboundEmptyReturnLocked) {
 			Toast.makeText(MainActivity.this, "空托回库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		if (targetActivity == EmptyPalletReturnActivity.class
+			&& (inboundLocked || inspectionLocked || returnValveLocked || outboundLocked || inspectionEmptyReturnLocked || outboundEmptyReturnLocked)) {
+			Toast.makeText(MainActivity.this, "任务执行中，请稍后再试", Toast.LENGTH_SHORT).show();
 			return;
 		}
 		if (targetActivity != InboundActivity.class && targetActivity != ReturnWarehouseActivity.class && inboundLocked) {
@@ -293,6 +310,15 @@ public class MainActivity extends Activity {
 				: (inspectionEmptyReturnLocked ? "送检空托回库中"
 					: (returnValveLocked ? "样品回库中" : null)));
 		updateLockedButton(btnOutbound, outboundLabel, outboundEnabled, outboundReason);
+
+		boolean emptyReturnEnabled = !inboundLocked && !inspectionLocked && !inspectionEmptyReturnLocked
+			&& !returnValveLocked && !outboundLocked && !outboundEmptyReturnLocked;
+		String emptyReturnReason = inboundLocked ? "入库锁定"
+			: (inspectionLocked ? "送检锁定"
+				: (inspectionEmptyReturnLocked ? "空托回库中"
+					: (returnValveLocked ? "样品回库中"
+						: (outboundLocked ? "出库中" : (outboundEmptyReturnLocked ? "空托回库中" : null)))));
+		updateLockedButton(btnEmptyPalletReturn, emptyPalletReturnLabel, emptyReturnEnabled, emptyReturnReason);
 	}
 
 	private void updateLockedButton(Button button, CharSequence label, boolean enabled, String reason) {

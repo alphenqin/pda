@@ -32,8 +32,10 @@ import java.util.Map;
 public class SendInspectionActivity extends Activity {
 
     private static final long INSPECTION_LOCK_POLL_MS = 5000L;
-    private static final String SMALL_PALLET_INSPECTION_BIN = "Z6-装卸点";
-    private static final String LARGE_PALLET_INSPECTION_BIN = "Z7-装卸点";
+    private static final String[] SMALL_PALLET_INSPECTION_BINS = {
+        "Z6-装卸点", "Z7-装卸点", "Z8-装卸点", "Z9-装卸点"
+    };
+    private static final String LARGE_PALLET_INSPECTION_BIN = "Z10-装卸点";
     private static final int BIN_TYPE_SMALL_PALLET = 1;
     private static final int BIN_TYPE_LARGE_PALLET = 2;
     
@@ -84,6 +86,7 @@ public class SendInspectionActivity extends Activity {
         btnBack = (Button) findViewById(R.id.btnBack);
         callSendLabel = btnCallSend.getText();
         emptyReturnLabel = btnEmptyPalletReturn.getText();
+        btnEmptyPalletReturn.setVisibility(View.GONE);
         
         updateStatus(false);
         applySelectedValve(null);
@@ -136,24 +139,42 @@ public class SendInspectionActivity extends Activity {
             return;
         }
 
-        String targetBinCode = resolveInspectionTargetBin();
-        if (targetBinCode == null) {
+        String[] targetBins = resolveInspectionTargetBins();
+        if (targetBins == null || targetBins.length == 0) {
             Toast.makeText(this, "库位类型无法识别，无法确定送检站点", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        showSendInspectionConfirm(targetBinCode);
+        if (targetBins.length == 1) {
+            showSendInspectionConfirm(targetBins[0]);
+            return;
+        }
+        showInspectionTargetSelect(targetBins);
     }
 
-    private String resolveInspectionTargetBin() {
+    private String[] resolveInspectionTargetBins() {
         String palletType = resolvePalletTypeByBinType(selectedValve == null ? null : selectedValve.getBinType());
         if ("large".equals(palletType)) {
-            return LARGE_PALLET_INSPECTION_BIN;
+            return new String[]{LARGE_PALLET_INSPECTION_BIN};
         }
         if ("small".equals(palletType)) {
-            return SMALL_PALLET_INSPECTION_BIN;
+            return SMALL_PALLET_INSPECTION_BINS;
         }
         return null;
+    }
+
+    private void showInspectionTargetSelect(String[] targetBins) {
+        new AlertDialog.Builder(this)
+            .setTitle("选择送检站点")
+            .setItems(targetBins, new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface dialog, int which) {
+                    if (which >= 0 && which < targetBins.length) {
+                        showSendInspectionConfirm(targetBins[which]);
+                    }
+                }
+            })
+            .show();
     }
 
     private String resolvePalletTypeByBinType(Integer binType) {

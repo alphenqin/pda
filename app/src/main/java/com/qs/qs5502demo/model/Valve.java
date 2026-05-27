@@ -18,7 +18,7 @@ public class Valve implements Serializable {
     private Integer binType;        // 库位类型：1小托盘、2大托盘
     private String locationCode;    // 库位号（兼容旧字段）
     private String valveStatus;     // 阀门状态：IN_STOCK/IN_INSPECTION/INSPECTED/OUTBOUND
-    private String inspectionTargetBin; // 送检目标站点（如 Z6-装卸点/Z7-装卸点）
+    private String inspectionTargetBin; // 送检目标站点（如 Z6-Z10 装卸点）
     private String remark;          // 备注
     private String deviceCode;      // PDA设备编号
 

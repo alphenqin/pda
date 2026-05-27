@@ -53,8 +53,10 @@ public class OutboundActivity extends Activity {
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
     private static final String LARGE_DOCK_BIN = "D2-大托盘接驳点";
-    private static final String SMALL_OUTBOUND_RETURN_START = "Z6-装卸点";
-    private static final String LARGE_OUTBOUND_RETURN_START = "Z7-装卸点";
+    private static final String[] SMALL_OUTBOUND_BINS = {
+        "Z6-装卸点", "Z7-装卸点", "Z8-装卸点", "Z9-装卸点"
+    };
+    private static final String LARGE_OUTBOUND_BIN = "Z10-装卸点";
     private static final long LOCK_POLL_INTERVAL_MS = 5000L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -87,6 +89,7 @@ public class OutboundActivity extends Activity {
         btnBack = (Button) findViewById(R.id.btnBack);
         callOutboundLabel = btnCallOutbound.getText();
         emptyPalletReturnLabel = btnEmptyPalletReturn.getText();
+        btnEmptyPalletReturn.setVisibility(View.GONE);
         
         updateStatus(false);
         updateOutboundLockUi();
@@ -145,20 +148,43 @@ public class OutboundActivity extends Activity {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (isBlank(resolveOutboundTarget())) {
+        String[] outboundTargets = resolveOutboundTargets();
+        if (outboundTargets == null || outboundTargets.length == 0) {
             Toast.makeText(this, "托盘类型无法识别，无法确定出库站点", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
+        if (outboundTargets.length == 1) {
+            showOutboundConfirm(outboundTargets[0]);
+            return;
+        }
+        showOutboundTargetSelect(outboundTargets);
+    }
+
+    private void showOutboundTargetSelect(String[] outboundTargets) {
+        new AlertDialog.Builder(this)
+            .setTitle("选择出库站点")
+            .setItems(outboundTargets, new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface dialog, int which) {
+                    if (which >= 0 && which < outboundTargets.length) {
+                        showOutboundConfirm(outboundTargets[which]);
+                    }
+                }
+            })
+            .show();
+    }
+
+    private void showOutboundConfirm(String targetBinCode) {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫出库")
             .setMessage("出厂编号：" + selectedValve.getValveNo() +
                        "\n库位号：" + binCode +
-                       "\n目标站点：" + resolveOutboundTarget())
+                       "\n目标站点：" + targetBinCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
-                    performCallOutbound();
+                    performCallOutbound(targetBinCode);
                 }
             })
             .setNegativeButton("取消", null)
@@ -168,7 +194,7 @@ public class OutboundActivity extends Activity {
     /**
      * 执行呼叫出库
      */
-    private void performCallOutbound() {
+    private void performCallOutbound(String targetBinCode) {
         Toast.makeText(this, "正在创建出库任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
@@ -192,7 +218,7 @@ public class OutboundActivity extends Activity {
                         params.put("palletNo", effectivePalletNo);
                     }
                     params.put("fromBinCode", binCode);
-                    params.put("toBinCode", resolveOutboundTarget());
+                    params.put("toBinCode", targetBinCode);
                     if (selectedValve != null && selectedValve.getValveNo() != null) {
                         params.put("valveNo", selectedValve.getValveNo());
                     }
@@ -275,7 +301,7 @@ public class OutboundActivity extends Activity {
         
         new AlertDialog.Builder(this)
             .setTitle("确认空托回库")
-            .setMessage("将空托盘从" + resolveOutboundEmptyReturnStart() + "送回库位：" + binCode)
+            .setMessage("将空托盘从" + lastOutboundToBinCode + "送回库位：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
@@ -434,26 +460,15 @@ public class OutboundActivity extends Activity {
         return null;
     }
 
-    private String resolveOutboundEmptyReturnStart() {
+    private String[] resolveOutboundTargets() {
         String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
         if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
-            return LARGE_OUTBOUND_RETURN_START;
+            return new String[]{LARGE_OUTBOUND_BIN};
         }
         if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
-            return SMALL_OUTBOUND_RETURN_START;
+            return SMALL_OUTBOUND_BINS;
         }
-        return "装卸点";
-    }
-
-    private String resolveOutboundTarget() {
-        String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
-        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
-            return LARGE_OUTBOUND_RETURN_START;
-        }
-        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
-            return SMALL_OUTBOUND_RETURN_START;
-        }
-        return "";
+        return null;
     }
 
     @Override

@@ -9,6 +9,7 @@ import com.qs.qs5502demo.model.AvailableBin;
 import com.qs.qs5502demo.model.AvailablePallet;
 import com.qs.qs5502demo.model.LoginRequest;
 import com.qs.qs5502demo.model.LoginResponse;
+import com.qs.qs5502demo.model.OutsideEmptyPallet;
 import com.qs.qs5502demo.model.PalletScanConfig;
 import com.qs.qs5502demo.model.PageResponse;
 import com.qs.qs5502demo.model.Pallet;
@@ -22,6 +23,7 @@ import com.qs.qs5502demo.model.TaskLockStatus;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -341,6 +343,41 @@ public class WmsApiService {
 
         if (apiResponse.isSuccess()) {
             return apiResponse.getData() != null ? apiResponse.getData() : Collections.emptyList();
+        } else {
+            throw new IOException(apiResponse.getMessage());
+        }
+    }
+
+    public List<OutsideEmptyPallet> listOutsideEmptyPallets(Context context) throws IOException {
+        String url = getBaseUrl() + "/outside-empty-pallet/list";
+        String response = HttpUtil.post(url, "{}", context);
+
+        Type type = new TypeToken<ApiResponse<List<OutsideEmptyPallet>>>(){}.getType();
+        ApiResponse<List<OutsideEmptyPallet>> apiResponse = HttpUtil.fromJson(response, type);
+
+        if (apiResponse.isSuccess()) {
+            return apiResponse.getData() != null ? apiResponse.getData() : Collections.emptyList();
+        } else {
+            throw new IOException(apiResponse.getMessage());
+        }
+    }
+
+    public int returnOutsideEmptyPallets(List<Long> ids, Context context) throws IOException {
+        String url = getBaseUrl() + "/outside-empty-pallet/return/batch";
+        Map<String, Object> request = new HashMap<>();
+        request.put("ids", new ArrayList<Long>(ids));
+        request.put("deviceCode", com.qs.qs5502demo.util.PreferenceUtil.getDeviceCode(context));
+        String response = HttpUtil.post(url, HttpUtil.toJson(request), context);
+
+        Type type = new TypeToken<ApiResponse<Map<String, Object>>>(){}.getType();
+        ApiResponse<Map<String, Object>> apiResponse = HttpUtil.fromJson(response, type);
+
+        if (apiResponse.isSuccess()) {
+            Map<String, Object> data = apiResponse.getData();
+            if (data != null && data.get("accepted") instanceof Number) {
+                return ((Number) data.get("accepted")).intValue();
+            }
+            return ids.size();
         } else {
             throw new IOException(apiResponse.getMessage());
         }

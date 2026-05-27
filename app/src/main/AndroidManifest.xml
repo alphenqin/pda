@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.qs.pda5502demo"
     android:versionCode="1"
-    android:versionName="1.34">
+    android:versionName="1.35">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -70,6 +70,12 @@
         <!-- 出库模块 -->
         <activity
             android:name="com.qs.qs5502demo.outbound.OutboundActivity"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+
+        <!-- 空托回库模块 -->
+        <activity
+            android:name="com.qs.qs5502demo.emptypallet.EmptyPalletReturnActivity"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="stateAlwaysHidden" />
         
