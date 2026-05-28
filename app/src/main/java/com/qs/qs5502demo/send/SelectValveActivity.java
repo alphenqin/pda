@@ -259,7 +259,8 @@ public class SelectValveActivity extends Activity {
             
             void bind(Valve valve, int position) {
                 rbSelected.setChecked(selectedValve == valve);
-                tvValveNo.setText("出厂编号：" + valve.getValveNo());
+                tvValveNo.setText("出厂编号：" + displayText(valve.getValveNo())
+                    + "  送检单位：" + displayText(valve.getVendorName()));
                 tvPalletInfo.setText("库位：" + displayText(valve.getBinCode()));
             }
         }

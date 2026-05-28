@@ -32,12 +32,6 @@ import java.util.Map;
 public class SendInspectionActivity extends Activity {
 
     private static final long INSPECTION_LOCK_POLL_MS = 5000L;
-    private static final String[] SMALL_PALLET_INSPECTION_BINS = {
-        "Z6-装卸点", "Z7-装卸点", "Z8-装卸点", "Z9-装卸点"
-    };
-    private static final String LARGE_PALLET_INSPECTION_BIN = "Z10-装卸点";
-    private static final int BIN_TYPE_SMALL_PALLET = 1;
-    private static final int BIN_TYPE_LARGE_PALLET = 2;
     
     private TextView tvPalletNo;
     private TextView tvLocationCode;
@@ -104,7 +98,7 @@ public class SendInspectionActivity extends Activity {
         btnSelectValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (inspectionLocked || inspectionEmptyReturnLocked || callSendInProgress || emptyReturnInProgress) {
+                if (callSendInProgress || emptyReturnInProgress) {
                     Toast.makeText(SendInspectionActivity.this, "任务执行中，请稍后再选择样品", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -139,67 +133,18 @@ public class SendInspectionActivity extends Activity {
             return;
         }
 
-        String[] targetBins = resolveInspectionTargetBins();
-        if (targetBins == null || targetBins.length == 0) {
-            Toast.makeText(this, "库位类型无法识别，无法确定送检站点", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (targetBins.length == 1) {
-            showSendInspectionConfirm(targetBins[0]);
-            return;
-        }
-        showInspectionTargetSelect(targetBins);
+        showSendInspectionConfirm();
     }
 
-    private String[] resolveInspectionTargetBins() {
-        String palletType = resolvePalletTypeByBinType(selectedValve == null ? null : selectedValve.getBinType());
-        if ("large".equals(palletType)) {
-            return new String[]{LARGE_PALLET_INSPECTION_BIN};
-        }
-        if ("small".equals(palletType)) {
-            return SMALL_PALLET_INSPECTION_BINS;
-        }
-        return null;
-    }
-
-    private void showInspectionTargetSelect(String[] targetBins) {
-        new AlertDialog.Builder(this)
-            .setTitle("选择送检站点")
-            .setItems(targetBins, new android.content.DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(android.content.DialogInterface dialog, int which) {
-                    if (which >= 0 && which < targetBins.length) {
-                        showSendInspectionConfirm(targetBins[which]);
-                    }
-                }
-            })
-            .show();
-    }
-
-    private String resolvePalletTypeByBinType(Integer binType) {
-        if (binType == null) {
-            return null;
-        }
-        if (binType == BIN_TYPE_LARGE_PALLET) {
-            return "large";
-        }
-        if (binType == BIN_TYPE_SMALL_PALLET) {
-            return "small";
-        }
-        return null;
-    }
-
-    private void showSendInspectionConfirm(String targetBinCode) {
+    private void showSendInspectionConfirm() {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫送检")
-            .setMessage("出厂编号：" + selectedValve.getValveNo() +
-                       "\n库位号：" + binCode +
-                       "\n目标站点：" + targetBinCode)
+            .setMessage("出厂编号：" + displayText(selectedValve.getValveNo()) +
+                       "\n库位号：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
-                    performCallSendInspection(targetBinCode);
+                    performCallSendInspection();
                 }
             })
             .setNegativeButton("取消", null)
@@ -209,7 +154,7 @@ public class SendInspectionActivity extends Activity {
     /**
      * 执行呼叫送检
      */
-    private void performCallSendInspection(String targetBinCode) {
+    private void performCallSendInspection() {
         if (callSendInProgress) {
             Toast.makeText(this, "送检任务下发中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
@@ -234,8 +179,7 @@ public class SendInspectionActivity extends Activity {
                         params.put("palletNo", effectivePalletNo);
                     }
                     params.put("fromBinCode", binCode);
-                    params.put("toBinCode", targetBinCode);
-                    if (selectedValve != null && selectedValve.getValveNo() != null) {
+                    if (selectedValve != null && !isBlank(selectedValve.getValveNo())) {
                         params.put("valveNo", selectedValve.getValveNo());
                     }
                     if (matCode != null) {
@@ -251,8 +195,9 @@ public class SendInspectionActivity extends Activity {
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outID;
                                 updateStatus(true);
+                                String target = result.getToBinCode() == null ? "" : "，站点：" + result.getToBinCode();
                                 Toast.makeText(SendInspectionActivity.this, 
-                                    "呼叫送检成功，任务号：" + taskNo, 
+                                    "呼叫送检成功，任务号：" + taskNo + target, 
                                     Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(SendInspectionActivity.this, "呼叫送检失败", Toast.LENGTH_SHORT).show();
@@ -449,18 +394,18 @@ public class SendInspectionActivity extends Activity {
     private void applyInspectionLock(boolean locked, boolean emptyReturnLocked) {
         inspectionLocked = locked;
         inspectionEmptyReturnLocked = emptyReturnLocked;
-        boolean selectValveEnabled = !inspectionLocked && !inspectionEmptyReturnLocked && !callSendInProgress && !emptyReturnInProgress;
+        boolean selectValveEnabled = !callSendInProgress && !emptyReturnInProgress;
         btnSelectValve.setEnabled(selectValveEnabled);
         btnSelectValve.setAlpha(selectValveEnabled ? 1.0f : 0.4f);
 
-        boolean callSendEnabled = !inspectionLocked && !callSendInProgress;
+        boolean callSendEnabled = !callSendInProgress;
         btnCallSend.setEnabled(callSendEnabled);
         if (callSendEnabled) {
             btnCallSend.setAlpha(1.0f);
             btnCallSend.setText(callSendLabel);
         } else {
             btnCallSend.setAlpha(0.4f);
-            btnCallSend.setText(callSendLabel + (inspectionLocked ? "（送检锁定）" : "（处理中）"));
+            btnCallSend.setText(callSendLabel + "（处理中）");
         }
 
         boolean emptyReturnEnabled = !inspectionLocked && !inspectionEmptyReturnLocked && !emptyReturnInProgress;
@@ -580,7 +525,7 @@ public class SendInspectionActivity extends Activity {
         palletNo = trimToNull(selectedValve.getPalletNo());
         binCode = trimToNull(selectedValve.getBinCode());
         matCode = trimToNull(selectedValve.getMatCode());
-        tvPalletNo.setText(displayText(selectedValve.getValveNo()));
+                tvPalletNo.setText(displayText(selectedValve.getValveNo()));
         tvLocationCode.setText(displayText(binCode));
         updateStatus(!isBlank(binCode));
     }

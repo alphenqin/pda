@@ -45,18 +45,10 @@ public class OutboundActivity extends Activity {
     private String swapStation = "WAREHOUSE_SWAP_1"; // 置换区站点
     private Valve selectedValve;
     private String lastOutboundToBinCode;
-    private static final String PALLET_TYPE_SMALL = "t1";
-    private static final String PALLET_TYPE_LARGE = "t2";
-    private static final int BIN_TYPE_SMALL_PALLET = 1;
-    private static final int BIN_TYPE_LARGE_PALLET = 2;
     private static final String SMALL_BUFFER_BIN = "B3-15-01";
     private static final String LARGE_BUFFER_BIN = "B3-14-01";
     private static final String SMALL_DOCK_BIN = "D2-小托盘接驳点";
     private static final String LARGE_DOCK_BIN = "D2-大托盘接驳点";
-    private static final String[] SMALL_OUTBOUND_BINS = {
-        "Z6-装卸点", "Z7-装卸点", "Z8-装卸点", "Z9-装卸点"
-    };
-    private static final String LARGE_OUTBOUND_BIN = "Z10-装卸点";
     private static final long LOCK_POLL_INTERVAL_MS = 5000L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -106,7 +98,7 @@ public class OutboundActivity extends Activity {
         btnSelectValve.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (outboundLocked || outboundEmptyReturnLocked || outboundInProgress || outboundEmptyReturnInProgress) {
+                if (outboundInProgress || outboundEmptyReturnInProgress) {
                     Toast.makeText(OutboundActivity.this, "任务执行中，请稍后再选择样品", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -148,43 +140,18 @@ public class OutboundActivity extends Activity {
             Toast.makeText(this, "请先选择样品", Toast.LENGTH_SHORT).show();
             return;
         }
-        String[] outboundTargets = resolveOutboundTargets();
-        if (outboundTargets == null || outboundTargets.length == 0) {
-            Toast.makeText(this, "托盘类型无法识别，无法确定出库站点", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (outboundTargets.length == 1) {
-            showOutboundConfirm(outboundTargets[0]);
-            return;
-        }
-        showOutboundTargetSelect(outboundTargets);
+        showOutboundConfirm();
     }
 
-    private void showOutboundTargetSelect(String[] outboundTargets) {
-        new AlertDialog.Builder(this)
-            .setTitle("选择出库站点")
-            .setItems(outboundTargets, new android.content.DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(android.content.DialogInterface dialog, int which) {
-                    if (which >= 0 && which < outboundTargets.length) {
-                        showOutboundConfirm(outboundTargets[which]);
-                    }
-                }
-            })
-            .show();
-    }
-
-    private void showOutboundConfirm(String targetBinCode) {
+    private void showOutboundConfirm() {
         new AlertDialog.Builder(this)
             .setTitle("确认呼叫出库")
-            .setMessage("出厂编号：" + selectedValve.getValveNo() +
-                       "\n库位号：" + binCode +
-                       "\n目标站点：" + targetBinCode)
+            .setMessage("出厂编号：" + displayText(selectedValve.getValveNo()) +
+                       "\n库位号：" + binCode)
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(android.content.DialogInterface dialog, int which) {
-                    performCallOutbound(targetBinCode);
+                    performCallOutbound();
                 }
             })
             .setNegativeButton("取消", null)
@@ -194,7 +161,7 @@ public class OutboundActivity extends Activity {
     /**
      * 执行呼叫出库
      */
-    private void performCallOutbound(String targetBinCode) {
+    private void performCallOutbound() {
         Toast.makeText(this, "正在创建出库任务...", Toast.LENGTH_SHORT).show();
         
         new Thread(new Runnable() {
@@ -218,8 +185,7 @@ public class OutboundActivity extends Activity {
                         params.put("palletNo", effectivePalletNo);
                     }
                     params.put("fromBinCode", binCode);
-                    params.put("toBinCode", targetBinCode);
-                    if (selectedValve != null && selectedValve.getValveNo() != null) {
+                    if (selectedValve != null && !isBlank(selectedValve.getValveNo())) {
                         params.put("valveNo", selectedValve.getValveNo());
                     }
                     if (matCode != null) {
@@ -233,8 +199,9 @@ public class OutboundActivity extends Activity {
                             if (result != null) {
                                 String taskNo = result.getOutID() != null ? result.getOutID() : outId;
                                 lastOutboundToBinCode = result.getToBinCode();
+                                String target = result.getToBinCode() == null ? "" : "，站点：" + result.getToBinCode();
                                 Toast.makeText(OutboundActivity.this, 
-                                    "呼叫出库成功，任务号：" + taskNo, 
+                                    "呼叫出库成功，任务号：" + taskNo + target, 
                                     Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(OutboundActivity.this, "呼叫出库失败", Toast.LENGTH_SHORT).show();
@@ -416,8 +383,8 @@ public class OutboundActivity extends Activity {
     }
 
     private void updateOutboundEmptyReturnLockUi() {
-        boolean locked = outboundEmptyReturnLocked || outboundEmptyReturnInProgress;
-        boolean outboundLockedLocal = outboundLocked || outboundInProgress;
+        boolean locked = outboundEmptyReturnInProgress;
+        boolean outboundLockedLocal = outboundInProgress;
         boolean selectValveEnabled = !locked && !outboundLockedLocal;
         btnSelectValve.setEnabled(selectValveEnabled);
         btnSelectValve.setAlpha(selectValveEnabled ? 1.0f : 0.4f);
@@ -445,30 +412,6 @@ public class OutboundActivity extends Activity {
                 btnEmptyPalletReturn.setText(emptyPalletReturnLabel + "（出库中）");
             }
         }
-    }
-
-    private String resolvePalletTypeCodeByBinType(Integer binType) {
-        if (binType == null) {
-            return null;
-        }
-        if (binType == BIN_TYPE_LARGE_PALLET) {
-            return PALLET_TYPE_LARGE;
-        }
-        if (binType == BIN_TYPE_SMALL_PALLET) {
-            return PALLET_TYPE_SMALL;
-        }
-        return null;
-    }
-
-    private String[] resolveOutboundTargets() {
-        String palletType = resolvePalletTypeCodeByBinType(selectedValve == null ? null : selectedValve.getBinType());
-        if (PALLET_TYPE_LARGE.equalsIgnoreCase(palletType)) {
-            return new String[]{LARGE_OUTBOUND_BIN};
-        }
-        if (PALLET_TYPE_SMALL.equalsIgnoreCase(palletType)) {
-            return SMALL_OUTBOUND_BINS;
-        }
-        return null;
     }
 
     @Override
