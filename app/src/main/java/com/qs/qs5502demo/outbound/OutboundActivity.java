@@ -128,8 +128,8 @@ public class OutboundActivity extends Activity {
      * 呼叫出库
      */
     private void callOutbound() {
-        if (outboundLocked || outboundInProgress) {
-            Toast.makeText(this, "出库进行中，请稍后再试", Toast.LENGTH_SHORT).show();
+        if (outboundInProgress) {
+            Toast.makeText(this, "出库任务提交中，请稍后再试", Toast.LENGTH_SHORT).show();
             return;
         }
         if (outboundEmptyReturnLocked || outboundEmptyReturnInProgress) {
@@ -201,7 +201,7 @@ public class OutboundActivity extends Activity {
                                 lastOutboundToBinCode = result.getToBinCode();
                                 String target = result.getToBinCode() == null ? "" : "，站点：" + result.getToBinCode();
                                 Toast.makeText(OutboundActivity.this, 
-                                    "呼叫出库成功，任务号：" + taskNo + target, 
+                                    "出库任务已加入队列，任务号：" + taskNo + target,
                                     Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(OutboundActivity.this, "呼叫出库失败", Toast.LENGTH_SHORT).show();
