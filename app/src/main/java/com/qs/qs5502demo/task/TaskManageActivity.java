@@ -34,6 +34,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.LinearLayoutManager;
 
 public class TaskManageActivity extends Activity {
+    private static final int MAX_DISPLAY_TASKS = 20;
     
     private EditText etStartDate;
     private EditText etEndDate;
@@ -144,8 +145,6 @@ public class TaskManageActivity extends Activity {
         if (!endDate.isEmpty()) {
             params.put("endDate", endDate);
         }
-        params.put("pageNum", "1");
-        params.put("pageSize", "20");
         params.put("deviceCode", PreferenceUtil.getDeviceCode(TaskManageActivity.this));
         
         Toast.makeText(this, "正在查询...", Toast.LENGTH_SHORT).show();
@@ -161,7 +160,7 @@ public class TaskManageActivity extends Activity {
                         public void run() {
                             taskList.clear();
                             if (pageResponse != null && pageResponse.getList() != null) {
-                                taskList.addAll(pageResponse.getList());
+                                taskList.addAll(getLatestDisplayTasks(pageResponse.getList()));
                             }
                             adapter.notifyDataSetChanged();
                             
@@ -183,6 +182,46 @@ public class TaskManageActivity extends Activity {
                 }
             }
         }).start();
+    }
+
+    private List<Task> getLatestDisplayTasks(List<Task> source) {
+        List<Task> latest = new ArrayList<Task>(source);
+        java.util.Collections.sort(latest, new java.util.Comparator<Task>() {
+            @Override
+            public int compare(Task left, Task right) {
+                return compareTaskTime(right, left);
+            }
+        });
+        if (latest.size() > MAX_DISPLAY_TASKS) {
+            return new ArrayList<Task>(latest.subList(0, MAX_DISPLAY_TASKS));
+        }
+        return latest;
+    }
+
+    private int compareTaskTime(Task left, Task right) {
+        Date leftDate = parseTaskTime(left);
+        Date rightDate = parseTaskTime(right);
+        if (leftDate == null && rightDate == null) {
+            return 0;
+        }
+        if (leftDate == null) {
+            return -1;
+        }
+        if (rightDate == null) {
+            return 1;
+        }
+        return leftDate.compareTo(rightDate);
+    }
+
+    private Date parseTaskTime(Task task) {
+        if (task == null || task.getCreateTime() == null || task.getCreateTime().trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).parse(task.getCreateTime());
+        } catch (ParseException e) {
+            return null;
+        }
     }
 
     private void setupDatePicker(final EditText target) {
