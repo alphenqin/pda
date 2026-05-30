@@ -63,17 +63,14 @@
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
 
-            <EditText
+            <TextView
                 android:id="@+id/tvPalletNo"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="请输入出厂编号"
+                android:text="--"
                 android:textSize="18sp"
-                android:textColor="@color/text_secondary"
-                android:singleLine="true"
-                android:background="#F0F0F0"
-                android:padding="8dp" />
+                android:textColor="@color/text_secondary" />
         </LinearLayout>
 
         <LinearLayout
@@ -196,10 +193,21 @@
 
         <!-- 阀门回库按钮 -->
         <Button
+            android:id="@+id/btnSelectValve"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginBottom="16dp"
+            android:text="2. 选样品"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:background="#2196F3"
+            android:textColor="#FFFFFF" />
+
+        <Button
             android:id="@+id/btnValveReturn"
             android:layout_width="match_parent"
             android:layout_height="100dp"
-            android:text="2. 样品回库"
+            android:text="3. 样品回库"
             android:textSize="24sp"
             android:textStyle="bold"
             android:background="#4CAF50"

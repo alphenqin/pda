@@ -2,13 +2,13 @@ package com.qs.qs5502demo.returnwarehouse;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -21,6 +21,8 @@ import com.qs.qs5502demo.model.AvailableBin;
 import com.qs.qs5502demo.model.Task;
 import com.qs.qs5502demo.model.TaskDispatchResult;
 import com.qs.qs5502demo.model.TaskLockStatus;
+import com.qs.qs5502demo.model.Valve;
+import com.qs.qs5502demo.send.SelectValveActivity;
 import com.qs.qs5502demo.util.DateUtil;
 import com.qs.qs5502demo.util.PreferenceUtil;
 
@@ -29,12 +31,13 @@ import java.util.Map;
 
 public class ReturnWarehouseActivity extends Activity {
     
-    private EditText etValveNo;
+    private TextView tvPalletNo;
     private TextView tvLocationCode;
     private TextView tvReturnStation;
     private TextView tvStorageFloor;
     private View viewStatus;
     private Button btnSelectReturnStation;
+    private Button btnSelectValve;
     private Button btnValveReturn;
     private Button btnBack;
     private CharSequence valveReturnLabel;
@@ -43,8 +46,12 @@ public class ReturnWarehouseActivity extends Activity {
     
     private String palletNo;
     private String binCode;
+    private String oldBinCode;
     private String returnOutsideSite;
+    private String matCode;
+    private String inspectionTargetBin;
     private Integer storageLevel;
+    private Valve selectedValve;
     private static final String PALLET_TYPE_SMALL = "t1";
     private static final String PALLET_TYPE_LARGE = "t2";
     private static final String SMALL_BUFFER_BIN = "B3-15-01";
@@ -77,12 +84,13 @@ public class ReturnWarehouseActivity extends Activity {
     }
     
     private void initViews() {
-        etValveNo = (EditText) findViewById(R.id.tvPalletNo);
+        tvPalletNo = (TextView) findViewById(R.id.tvPalletNo);
         tvLocationCode = (TextView) findViewById(R.id.tvLocationCode);
         tvReturnStation = (TextView) findViewById(R.id.tvReturnStation);
         tvStorageFloor = (TextView) findViewById(R.id.tvStorageFloor);
         viewStatus = findViewById(R.id.viewStatus);
         btnSelectReturnStation = (Button) findViewById(R.id.btnSelectReturnStation);
+        btnSelectValve = (Button) findViewById(R.id.btnSelectValve);
         btnValveReturn = (Button) findViewById(R.id.btnValveReturn);
         btnBack = (Button) findViewById(R.id.btnBack);
         valveReturnLabel = btnValveReturn.getText();
@@ -98,7 +106,20 @@ public class ReturnWarehouseActivity extends Activity {
                 finish();
             }
         });
-        
+
+        btnSelectValve.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (valveReturnInProgress) {
+                    Toast.makeText(ReturnWarehouseActivity.this, "样品回库进行中，请稍后再操作", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                Intent intent = new Intent(ReturnWarehouseActivity.this, SelectValveActivity.class);
+                intent.putExtra("taskType", "RETURN");
+                startActivityForResult(intent, 300);
+            }
+        });
+
         btnSelectReturnStation.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -122,8 +143,8 @@ public class ReturnWarehouseActivity extends Activity {
      * 阀门回库
      */
     private void callValveReturn() {
-        if (isBlank(getInputValveNo())) {
-            Toast.makeText(this, "请输入出厂编号", Toast.LENGTH_SHORT).show();
+        if (selectedValve == null) {
+            Toast.makeText(this, "请先选择出厂编号", Toast.LENGTH_SHORT).show();
             return;
         }
         if (isBlank(returnOutsideSite) || storageLevel == null) {
@@ -145,8 +166,9 @@ public class ReturnWarehouseActivity extends Activity {
     private void showValveReturnConfirm() {
         new AlertDialog.Builder(this)
             .setTitle("确认样品回库")
-            .setMessage("出厂编号：" + getInputValveNo()
+            .setMessage("出厂编号：" + selectedValve.getValveNo()
                 + "\n库外站点：" + returnOutsideSite
+                + "\n原库位：" + displayText(oldBinCode)
                 + "\n新库位：" + binCode
                 + "\n存放库位：" + getStorageFloorText())
             .setPositiveButton("确认", new android.content.DialogInterface.OnClickListener() {
@@ -206,8 +228,13 @@ public class ReturnWarehouseActivity extends Activity {
                     params.put("fromBinCode", returnOutsideSite);
                     params.put("toBinCode", binCode);
                     params.put("storageLevel", String.valueOf(storageLevel));
+                    if (matCode != null) {
+                        params.put("matCode", matCode);
+                    }
                     params.put("remark", "VALVE_RETURN");
-                    params.put("valveNo", getInputValveNo());
+                    if (selectedValve != null && selectedValve.getValveNo() != null) {
+                        params.put("valveNo", selectedValve.getValveNo());
+                    }
                     TaskDispatchResult result = wmsApiService.dispatchTask(params, ReturnWarehouseActivity.this);
                     
                     runOnUiThread(new Runnable() {
@@ -284,8 +311,9 @@ public class ReturnWarehouseActivity extends Activity {
         boolean valveReturnEnabled = !valveReturnInProgress;
         boolean selectionEnabled = valveReturnEnabled;
         btnSelectReturnStation.setEnabled(selectionEnabled);
+        btnSelectValve.setEnabled(selectionEnabled);
         btnSelectReturnStation.setAlpha(selectionEnabled ? 1.0f : 0.4f);
-        etValveNo.setEnabled(selectionEnabled);
+        btnSelectValve.setAlpha(selectionEnabled ? 1.0f : 0.4f);
         btnValveReturn.setEnabled(valveReturnEnabled);
         if (valveReturnEnabled) {
             btnValveReturn.setAlpha(1.0f);
@@ -425,6 +453,7 @@ public class ReturnWarehouseActivity extends Activity {
                             }
                             binCode = availableBin.getBinCode();
                             palletNo = binCode;
+                            tvPalletNo.setText(displayText(selectedValve != null ? selectedValve.getValveNo() : null));
                             tvLocationCode.setText(binCode);
                             updateStatus(true);
                         }
@@ -488,11 +517,15 @@ public class ReturnWarehouseActivity extends Activity {
     }
 
     private void resetReturnFormAfterQueue() {
+        selectedValve = null;
         palletNo = null;
         binCode = null;
+        oldBinCode = null;
         returnOutsideSite = null;
         storageLevel = null;
-        etValveNo.setText("");
+        matCode = null;
+        inspectionTargetBin = null;
+        tvPalletNo.setText("--");
         tvLocationCode.setText("--");
         tvReturnStation.setText("未选择");
         tvStorageFloor.setText("未选择");
@@ -560,6 +593,37 @@ public class ReturnWarehouseActivity extends Activity {
         return PALLET_TYPE_SMALL;
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 300 && resultCode == RESULT_OK && data != null) {
+            selectedValve = (Valve) data.getSerializableExtra("valve");
+            if (selectedValve != null) {
+                palletNo = trimToNull(selectedValve.getPalletNo());
+                oldBinCode = trimToNull(selectedValve.getBinCode());
+                if (oldBinCode == null) {
+                    oldBinCode = trimToNull(selectedValve.getRemark());
+                }
+                matCode = trimToNull(selectedValve.getMatCode());
+                inspectionTargetBin = selectedValve.getInspectionTargetBin();
+
+                tvPalletNo.setText(displayText(selectedValve.getValveNo()));
+                tvLocationCode.setText(displayText(binCode));
+                updateStatus(!isBlank(binCode));
+                if (isBlank(returnOutsideSite) || storageLevel == null) {
+                    tvReturnStation.setText("未选择");
+                    tvStorageFloor.setText("未选择");
+                } else {
+                    tvReturnStation.setText(formatReturnStationLabel(returnOutsideSite));
+                    tvStorageFloor.setText(getStorageFloorText());
+                    if (isBlank(binCode)) {
+                        fetchAvailableBinForReturnSelection();
+                    }
+                }
+            }
+        }
+    }
+
     private String getEffectivePalletNo() {
         if (!isBlank(binCode)) {
             return binCode;
@@ -567,11 +631,14 @@ public class ReturnWarehouseActivity extends Activity {
         if (!isBlank(palletNo)) {
             return palletNo;
         }
+        if (!isBlank(oldBinCode)) {
+            return oldBinCode;
+        }
         return binCode;
     }
 
-    private String getInputValveNo() {
-        return etValveNo == null ? null : trimToNull(etValveNo.getText().toString());
+    private String displayText(String value) {
+        return isBlank(value) ? "--" : value;
     }
 
     private String trimToNull(String value) {
