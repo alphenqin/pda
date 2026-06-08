@@ -141,8 +141,14 @@ public class EmptyPalletReturnActivity extends Activity {
     private String buildRecordText(OutsideEmptyPallet record) {
         String source = "OUTBOUND".equalsIgnoreCase(record.getSourceType()) ? "出库" : "送检";
         String status = "FAILED".equalsIgnoreCase(record.getStatus()) ? "（失败可重试）" : "";
-        return record.getStationCode() + " -> " + record.getTargetBinCode()
+        return "库外站点：" + record.getStationCode()
+            + "\n原库位：" + displayText(record.getTargetBinCode())
+            + "\n回库目标：提交时自动分配"
             + "\n来源：" + source + status;
+    }
+
+    private String displayText(String value) {
+        return value == null || value.trim().isEmpty() ? "-" : value.trim();
     }
 
     private TextView buildText(String text) {
